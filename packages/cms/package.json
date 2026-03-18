@@ -1,0 +1,22 @@
+{
+  "name": "@wapixia/cms",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "payload dev",
+    "build": "payload build",
+    "start": "payload serve",
+    "lint": "biome check .",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "payload": "^3.0.0",
+    "@payloadcms/db-postgres": "^3.0.0",
+    "@payloadcms/richtext-lexical": "^3.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Web (Client Site)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@wapixia/web", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "API (Fastify)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@wapixia/api", "dev"],
+      "port": 3010
+    },
+    {
+      "name": "Dashboard (Backoffice)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@wapixia/dashboard", "dev"],
+      "port": 3001
+    },
+    {
+      "name": "Admin (SuperAdmin)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@wapixia/admin", "dev"],
+      "port": 3002
+    },
+    {
+      "name": "Reseller Dashboard",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@wapixia/reseller", "dev"],
+      "port": 3003
+    },
+    {
+      "name": "Payload CMS",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@wapixia/cms", "dev"],
+      "port": 3005
+    }
+  ]
+}
