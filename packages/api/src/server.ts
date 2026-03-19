@@ -1,24 +1,40 @@
-import cors from '@fastify/cors'
+import 'dotenv/config'
 import Fastify from 'fastify'
+import { env } from './env.js'
+import { authPluginRegistration } from './plugins/auth.js'
+import { corsPluginRegistration } from './plugins/cors.js'
+import { rateLimitPluginRegistration } from './plugins/rate-limit.js'
+import { meRoutes } from './routes/auth/me.js'
+import { inviteRoutes } from './routes/auth/invite.js'
+import { organizationsRoutes } from './routes/organizations/index.js'
 
-const PORT = Number(process.env.PORT) || 3010
-
-const app = Fastify({ logger: true })
-
-await app.register(cors, { origin: true })
-
-app.get('/health', async () => {
-  return { status: 'ok', service: 'wapixia-api', timestamp: new Date().toISOString() }
+const app = Fastify({
+  logger: {
+    level: env.NODE_ENV === 'production' ? 'warn' : env.NODE_ENV === 'staging' ? 'info' : 'debug',
+  },
 })
 
-app.get('/api/v1/me', async (_request, reply) => {
-  reply.code(401)
-  return { error: { code: 'UNAUTHORIZED', message: 'Non authentifié' } }
-})
+// Plugins
+await app.register(corsPluginRegistration)
+await app.register(rateLimitPluginRegistration)
+await app.register(authPluginRegistration)
 
+// Health check (no auth)
+app.get('/health', async () => ({
+  status: 'ok',
+  service: 'wapixia-api',
+  timestamp: new Date().toISOString(),
+}))
+
+// Routes
+await app.register(meRoutes)
+await app.register(inviteRoutes)
+await app.register(organizationsRoutes)
+
+// Start
 try {
-  await app.listen({ port: PORT, host: '0.0.0.0' })
-  app.log.info(`API running on http://localhost:${PORT}`)
+  await app.listen({ port: env.PORT, host: '0.0.0.0' })
+  app.log.info(`🚀 API running on http://localhost:${env.PORT}`)
 } catch (err) {
   app.log.error(err)
   process.exit(1)
