@@ -1,4 +1,4 @@
-import { pgTable, pgEnum, uuid, text, numeric, boolean, timestamp, integer, jsonb, uniqueIndex } from 'drizzle-orm/pg-core'
+import { pgTable, pgEnum, uuid, text, numeric, boolean, timestamp, integer, jsonb, uniqueIndex, bigint, decimal } from 'drizzle-orm/pg-core'
 
 // ── Enums PostgreSQL ──
 
@@ -149,6 +149,136 @@ export const onboardingSessions = pgTable('onboarding_sessions', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
+// ── Enums Sprint 3 ──
+
+export const moduleCategoryEnum = pgEnum('module_category', ['content', 'reputation', 'acquisition', 'conversion', 'analytics', 'technical'])
+export const siteModuleStatusEnum = pgEnum('site_module_status', ['active', 'paused', 'cancelled'])
+export const aiContentTypeEnum = pgEnum('ai_content_type', ['blog_article', 'social_post', 'gmb_post', 'review_reply', 'seo_meta', 'faq'])
+export const aiContentPlatformEnum = pgEnum('ai_content_platform', ['facebook', 'instagram', 'gmb', 'blog', 'linkedin', 'tiktok'])
+export const aiContentStatusEnum = pgEnum('ai_content_status', ['pending_validation', 'approved', 'auto_approved', 'rejected', 'published', 'publish_failed', 'archived'])
+export const replyStatusEnum = pgEnum('reply_status', ['no_comment', 'pending', 'generated', 'validated', 'published', 'skipped'])
+export const socialPlatformEnum = pgEnum('social_platform', ['facebook', 'instagram', 'linkedin', 'youtube', 'tiktok', 'gmb'])
+export const socialAccountStatusEnum = pgEnum('social_account_status', ['active', 'expired', 'revoked', 'error'])
+
+// ── Module Catalog ──
+
+export const moduleCatalog = pgTable('module_catalog', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  priceMonthly: numeric('price_monthly', { precision: 10, scale: 2 }).notNull(),
+  category: text('category').notNull(),
+  isActive: boolean('is_active').default(true),
+  sortOrder: integer('sort_order').default(0),
+})
+
+// ── Site Modules ──
+
+export const siteModules = pgTable('site_modules', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  siteId: uuid('site_id').notNull().references(() => sites.id, { onDelete: 'cascade' }),
+  moduleId: text('module_id').notNull().references(() => moduleCatalog.id),
+  status: text('status').notNull().default('active'),
+  config: jsonb('config').default({}),
+  activatedAt: timestamp('activated_at', { withTimezone: true }).notNull().defaultNow(),
+  cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// ── AI Contents ──
+
+export const aiContents = pgTable('ai_contents', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  siteId: uuid('site_id').notNull().references(() => sites.id, { onDelete: 'cascade' }),
+  moduleId: text('module_id').notNull().references(() => moduleCatalog.id),
+  type: text('type').notNull(),
+  platform: text('platform'),
+  title: text('title'),
+  content: text('content').notNull(),
+  excerpt: text('excerpt'),
+  visualUrl: text('visual_url'),
+  visualAlt: text('visual_alt'),
+  hashtags: text('hashtags').array(),
+  metadata: jsonb('metadata').default({}),
+  promptVersion: text('prompt_version').notNull().default('1.0'),
+  modelUsed: text('model_used').notNull(),
+  tokensInput: integer('tokens_input').default(0),
+  tokensOutput: integer('tokens_output').default(0),
+  generationCost: numeric('generation_cost', { precision: 8, scale: 4 }).default('0'),
+  status: text('status').notNull().default('pending_validation'),
+  autoPublish: boolean('auto_publish').default(false),
+  rejectionNote: text('rejection_note'),
+  validatedBy: uuid('validated_by').references(() => users.id),
+  validatedAt: timestamp('validated_at', { withTimezone: true }),
+  publishedAt: timestamp('published_at', { withTimezone: true }),
+  scheduledFor: timestamp('scheduled_for', { withTimezone: true }),
+  publishError: text('publish_error'),
+  externalId: text('external_id'),
+  externalUrl: text('external_url'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// ── Google Reviews ──
+
+export const googleReviews = pgTable('google_reviews', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  siteId: uuid('site_id').notNull().references(() => sites.id, { onDelete: 'cascade' }),
+  gmbReviewId: text('gmb_review_id').unique().notNull(),
+  authorName: text('author_name').notNull(),
+  authorPhoto: text('author_photo'),
+  rating: integer('rating').notNull(),
+  comment: text('comment'),
+  reviewDate: timestamp('review_date', { withTimezone: true }).notNull(),
+  replyContent: text('reply_content'),
+  replyStatus: text('reply_status').default('pending'),
+  aiContentId: uuid('ai_content_id').references(() => aiContents.id),
+  publishedAt: timestamp('published_at', { withTimezone: true }),
+  // is_negative is a GENERATED ALWAYS AS column — not mapped in Drizzle (read-only computed)
+  alertSent: boolean('alert_sent').default(false),
+  alertSentAt: timestamp('alert_sent_at', { withTimezone: true }),
+  syncedAt: timestamp('synced_at', { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// ── Social Accounts ──
+
+export const socialAccounts = pgTable('social_accounts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  siteId: uuid('site_id').notNull().references(() => sites.id, { onDelete: 'cascade' }),
+  platform: text('platform').notNull(),
+  accessToken: text('access_token'),
+  refreshToken: text('refresh_token'),
+  tokenExpiresAt: timestamp('token_expires_at', { withTimezone: true }),
+  platformUserId: text('platform_user_id'),
+  platformPageId: text('platform_page_id'),
+  platformUsername: text('platform_username'),
+  platformName: text('platform_name'),
+  status: text('status').default('active'),
+  lastError: text('last_error'),
+  lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// ── Token Usage ──
+
+export const tokenUsage = pgTable('token_usage', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  siteId: uuid('site_id').notNull().references(() => sites.id),
+  moduleId: text('module_id').notNull().references(() => moduleCatalog.id),
+  periodYear: integer('period_year').notNull(),
+  periodMonth: integer('period_month').notNull(),
+  tokensInput: bigint('tokens_input', { mode: 'number' }).default(0),
+  tokensOutput: bigint('tokens_output', { mode: 'number' }).default(0),
+  apiCalls: integer('api_calls').default(0),
+  totalCostEur: numeric('total_cost_eur', { precision: 8, scale: 4 }).default('0'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
 // ── Type exports ──
 
 export type Organization = typeof organizations.$inferSelect
@@ -159,3 +289,16 @@ export type Site = typeof sites.$inferSelect
 export type NewSite = typeof sites.$inferInsert
 export type OnboardingSession = typeof onboardingSessions.$inferSelect
 export type NewOnboardingSession = typeof onboardingSessions.$inferInsert
+
+export type ModuleCatalog = typeof moduleCatalog.$inferSelect
+export type NewModuleCatalog = typeof moduleCatalog.$inferInsert
+export type SiteModule = typeof siteModules.$inferSelect
+export type NewSiteModule = typeof siteModules.$inferInsert
+export type AiContent = typeof aiContents.$inferSelect
+export type NewAiContent = typeof aiContents.$inferInsert
+export type GoogleReview = typeof googleReviews.$inferSelect
+export type NewGoogleReview = typeof googleReviews.$inferInsert
+export type SocialAccount = typeof socialAccounts.$inferSelect
+export type NewSocialAccount = typeof socialAccounts.$inferInsert
+export type TokenUsage = typeof tokenUsage.$inferSelect
+export type NewTokenUsage = typeof tokenUsage.$inferInsert
