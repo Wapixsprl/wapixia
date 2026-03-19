@@ -7,6 +7,10 @@ import { rateLimitPluginRegistration } from './plugins/rate-limit.js'
 import { meRoutes } from './routes/auth/me.js'
 import { inviteRoutes } from './routes/auth/invite.js'
 import { organizationsRoutes } from './routes/organizations/index.js'
+import { sitesRoutes } from './routes/sites/index.js'
+import { onboardingRoutes } from './routes/sites/onboarding.js'
+import { domainRoutes } from './routes/sites/domain.js'
+import { googleRoutes } from './routes/sites/google.js'
 
 const app = Fastify({
   logger: {
@@ -30,6 +34,10 @@ app.get('/health', async () => ({
 await app.register(meRoutes)
 await app.register(inviteRoutes)
 await app.register(organizationsRoutes)
+await app.register(sitesRoutes)
+await app.register(onboardingRoutes)
+await app.register(domainRoutes)
+await app.register(googleRoutes)
 
 // Start
 try {

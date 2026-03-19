@@ -10,6 +10,7 @@ export const siteStatusEnum = pgEnum('site_status', ['setup', 'staging', 'live',
 export const sitePlanEnum = pgEnum('site_plan', ['purchase', 'subscription'])
 export const sslStatusEnum = pgEnum('ssl_status', ['pending', 'active', 'error'])
 export const hostingTypeEnum = pgEnum('hosting_type', ['wapixia', 'client_ftp', 'client_vps'])
+export const generationStatusEnum = pgEnum('generation_status_enum', ['pending', 'generating', 'done', 'failed'])
 
 // ── Organizations (tenants) ──
 
@@ -107,6 +108,18 @@ export const sites = pgTable('sites', {
   // Status
   status: siteStatusEnum('status').notNull().default('setup'),
 
+  // Theming
+  theme: text('theme').default('default'),
+  primaryColor: text('primary_color').default('#00D4B1'),
+  secondaryColor: text('secondary_color').default('#050D1A'),
+
+  // Infrastructure
+  coolifyAppId: text('coolify_app_id'),
+  cloudflareRecordId: text('cloudflare_record_id'),
+
+  // Google OAuth
+  googleOauthToken: jsonb('google_oauth_token'),
+
   // Scores
   visibilityScore: integer('visibility_score').default(0),
   seoScore: integer('seo_score').default(0),
@@ -117,6 +130,25 @@ export const sites = pgTable('sites', {
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
 })
 
+// ── Onboarding Sessions ──
+
+export const onboardingSessions = pgTable('onboarding_sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  siteId: uuid('site_id').notNull().references(() => sites.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  currentStep: integer('current_step').default(1),
+  totalSteps: integer('total_steps').default(20),
+  answers: jsonb('answers').default({}),
+  generationStatus: text('generation_status').default('pending'),
+  generatedContent: jsonb('generated_content'),
+  generationStartedAt: timestamp('generation_started_at', { withTimezone: true }),
+  generationDoneAt: timestamp('generation_done_at', { withTimezone: true }),
+  errorMessage: text('error_message'),
+  tokensUsed: integer('tokens_used').default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
 // ── Type exports ──
 
 export type Organization = typeof organizations.$inferSelect
@@ -125,3 +157,5 @@ export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
 export type Site = typeof sites.$inferSelect
 export type NewSite = typeof sites.$inferInsert
+export type OnboardingSession = typeof onboardingSessions.$inferSelect
+export type NewOnboardingSession = typeof onboardingSessions.$inferInsert

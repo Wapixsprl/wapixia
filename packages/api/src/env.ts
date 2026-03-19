@@ -12,6 +12,17 @@ const envSchema = z.object({
 
   // CORS
   CORS_ORIGINS: z.string().default('http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003'),
+
+  // Cloudflare (domain management)
+  CLOUDFLARE_API_TOKEN: z.string().min(1).optional(),
+  CLOUDFLARE_ZONE_ID: z.string().min(1).optional(),
+
+  // Coolify (deployment)
+  COOLIFY_BASE_URL: z.string().url().optional(),
+  COOLIFY_API_TOKEN: z.string().min(1).optional(),
+
+  // AI generation
+  ANTHROPIC_API_KEY: z.string().min(1).optional(),
 })
 
 export type Env = z.infer<typeof envSchema>
