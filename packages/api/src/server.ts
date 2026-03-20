@@ -15,6 +15,7 @@ import { modulesRoutes } from './routes/modules/index.js'
 import { contentsRoutes } from './routes/contents/index.js'
 import { reviewsRoutes } from './routes/reviews/index.js'
 import { socialRoutes } from './routes/social/index.js'
+import { adminPilotRoutes } from './routes/admin/pilots.js'
 
 const app = Fastify({
   logger: {
@@ -46,6 +47,9 @@ await app.register(modulesRoutes)
 await app.register(contentsRoutes)
 await app.register(reviewsRoutes)
 await app.register(socialRoutes)
+
+// Admin routes (Sprint 7 — Pilots & Go-Live)
+await app.register(adminPilotRoutes)
 
 // Start
 try {

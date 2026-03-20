@@ -279,6 +279,40 @@ export const tokenUsage = pgTable('token_usage', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
+// ── Pilot Bugs ──
+
+export const pilotBugs = pgTable('pilot_bugs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  bugId: text('bug_id').unique().notNull(),
+  pilot: text('pilot').notNull(), // CHECK (pilot IN ('A', 'B', 'C'))
+  severity: text('severity').notNull(), // CHECK (severity IN ('critical', 'major', 'minor', 'cosmetic'))
+  description: text('description').notNull(),
+  reproSteps: text('repro_steps'),
+  expectedBehavior: text('expected_behavior'),
+  actualBehavior: text('actual_behavior'),
+  status: text('status').notNull().default('open'), // CHECK (status IN ('open', 'in_progress', 'fixed', 'wont_fix'))
+  fixedAt: timestamp('fixed_at', { withTimezone: true }),
+  sprintFix: integer('sprint_fix'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// ── Cost Snapshots ──
+
+export const costSnapshots = pgTable('cost_snapshots', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  siteId: uuid('site_id').notNull().references(() => sites.id),
+  periodYear: integer('period_year').notNull(),
+  periodMonth: integer('period_month').notNull(),
+  claudeTokensInput: bigint('claude_tokens_input', { mode: 'number' }).default(0),
+  claudeTokensOutput: bigint('claude_tokens_output', { mode: 'number' }).default(0),
+  claudeCostEur: decimal('claude_cost_eur', { precision: 10, scale: 4 }).default('0'),
+  infraCostEur: decimal('infra_cost_eur', { precision: 10, scale: 4 }).default('0'),
+  storageBytes: bigint('storage_bytes', { mode: 'number' }).default(0),
+  apiCalls: integer('api_calls').default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
 // ── Type exports ──
 
 export type Organization = typeof organizations.$inferSelect
@@ -302,3 +336,7 @@ export type SocialAccount = typeof socialAccounts.$inferSelect
 export type NewSocialAccount = typeof socialAccounts.$inferInsert
 export type TokenUsage = typeof tokenUsage.$inferSelect
 export type NewTokenUsage = typeof tokenUsage.$inferInsert
+export type PilotBug = typeof pilotBugs.$inferSelect
+export type NewPilotBug = typeof pilotBugs.$inferInsert
+export type CostSnapshot = typeof costSnapshots.$inferSelect
+export type NewCostSnapshot = typeof costSnapshots.$inferInsert

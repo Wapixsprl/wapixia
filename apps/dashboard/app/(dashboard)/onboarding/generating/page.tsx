@@ -15,7 +15,8 @@ const GENERATION_STEPS = [
 
 function getActiveStepIndex(progress: number): number {
   for (let i = GENERATION_STEPS.length - 1; i >= 0; i--) {
-    if (progress >= GENERATION_STEPS[i].range[0]) return i
+    const step = GENERATION_STEPS[i]
+    if (step && progress >= step.range[0]) return i
   }
   return 0
 }
