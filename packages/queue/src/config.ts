@@ -25,6 +25,7 @@ export const QUEUE_NAMES = {
   SMS: 'notifications:sms',
   ALERT: 'notifications:alert',
   SITE_GENERATE: 'sites:generate',
+  MONTHLY_REPORT: 'reports:monthly',
 } as const
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES]
@@ -83,6 +84,11 @@ const QUEUE_JOB_OPTIONS: Record<QueueName, JobsOptions> = {
     ...DEFAULT_JOB_OPTIONS,
     attempts: 2,
     backoff: { type: 'exponential', delay: 60_000 },
+  },
+  [QUEUE_NAMES.MONTHLY_REPORT]: {
+    ...DEFAULT_JOB_OPTIONS,
+    attempts: 2,
+    backoff: { type: 'exponential', delay: 30_000 },
   },
 }
 

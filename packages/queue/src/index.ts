@@ -14,9 +14,11 @@ export type {
   EmailJobData,
   AlertJobData,
   SiteGenerateJobData,
+  MonthlyReportJobData,
   ContentGenerationResult,
   PublishResult,
   AlertResult,
+  MonthlyReportResult,
 } from './types.js'
 
 // Queue instances
@@ -29,6 +31,7 @@ export {
   emailQueue,
   alertQueue,
   siteGenerateQueue,
+  monthlyReportQueue,
 } from './queues.js'
 
 // Workers
@@ -38,6 +41,7 @@ export { gmbPostWorker } from './workers/gmb-post.worker.js'
 export { reviewReplyWorker } from './workers/review-reply.worker.js'
 export { publishWorker } from './workers/publish.worker.js'
 export { alertWorker } from './workers/alert.worker.js'
+export { monthlyReportWorker } from './workers/monthly-report.worker.js'
 
 // Scheduler
 export { startScheduler } from './scheduler.js'

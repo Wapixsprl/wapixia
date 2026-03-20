@@ -50,6 +50,13 @@ export interface SiteGenerateJobData {
   sessionId: string
 }
 
+// ── Report jobs ──
+
+export interface MonthlyReportJobData {
+  siteId: string
+  recipientEmail?: string
+}
+
 // ── Worker result types ──
 
 export interface ContentGenerationResult {
@@ -68,4 +75,11 @@ export interface PublishResult {
 export interface AlertResult {
   alertSent: boolean
   messageId?: string
+}
+
+export interface MonthlyReportResult {
+  reportId: string
+  pdfUrl: string
+  pdfSizeBytes: number
+  visibilityScore: number
 }

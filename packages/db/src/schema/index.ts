@@ -279,6 +279,118 @@ export const tokenUsage = pgTable('token_usage', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
+// ── Leads ──
+
+export const leads = pgTable('leads', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  siteId: uuid('site_id').notNull().references(() => sites.id, { onDelete: 'cascade' }),
+  type: text('type').notNull(), // contact_form, quote_request, appointment, phone_call, whatsapp, chatbot, email_click
+  firstName: text('first_name'),
+  lastName: text('last_name'),
+  email: text('email'),
+  phone: text('phone'),
+  message: text('message'),
+  filesUrls: text('files_urls').array(),
+  sourcePage: text('source_page'),
+  sourceModule: text('source_module'),
+  utmSource: text('utm_source'),
+  utmMedium: text('utm_medium'),
+  utmCampaign: text('utm_campaign'),
+  referrer: text('referrer'),
+  estimatedValue: numeric('estimated_value', { precision: 10, scale: 2 }),
+  status: text('status').default('new'), // new, contacted, qualified, won, lost
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// ── Monthly Stats ──
+
+export const monthlyStats = pgTable('monthly_stats', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  siteId: uuid('site_id').notNull().references(() => sites.id, { onDelete: 'cascade' }),
+  periodYear: integer('period_year').notNull(),
+  periodMonth: integer('period_month').notNull(),
+
+  // Traffic
+  totalVisits: integer('total_visits').default(0),
+  uniqueVisitors: integer('unique_visitors').default(0),
+  organicVisits: integer('organic_visits').default(0),
+  directVisits: integer('direct_visits').default(0),
+  referralVisits: integer('referral_visits').default(0),
+  socialVisits: integer('social_visits').default(0),
+  avgSessionDuration: integer('avg_session_duration').default(0),
+  bounceRate: numeric('bounce_rate', { precision: 5, scale: 2 }).default('0'),
+
+  // Google Search
+  googleImpressions: integer('google_impressions').default(0),
+  googleClicks: integer('google_clicks').default(0),
+  averagePosition: numeric('average_position', { precision: 5, scale: 2 }),
+  topQueries: jsonb('top_queries').default([]),
+
+  // Leads
+  totalLeads: integer('total_leads').default(0),
+  leadsByType: jsonb('leads_by_type').default({}),
+  estimatedRevenue: numeric('estimated_revenue', { precision: 10, scale: 2 }).default('0'),
+
+  // Content production
+  blogArticlesPublished: integer('blog_articles_published').default(0),
+  socialPostsPublished: integer('social_posts_published').default(0),
+  gmbPostsPublished: integer('gmb_posts_published').default(0),
+  reviewsReplied: integer('reviews_replied').default(0),
+  reviewsReceived: integer('reviews_received').default(0),
+  averageRating: numeric('average_rating', { precision: 3, scale: 2 }),
+
+  // Scores
+  visibilityScore: integer('visibility_score'),
+  seoScore: integer('seo_score'),
+  reputationScore: integer('reputation_score'),
+
+  // Previous period (for comparison)
+  prevVisits: integer('prev_visits').default(0),
+  prevLeads: integer('prev_leads').default(0),
+  prevVisibilityScore: integer('prev_visibility_score').default(0),
+
+  // Report
+  reportPdfUrl: text('report_pdf_url'),
+  reportSentAt: timestamp('report_sent_at', { withTimezone: true }),
+  computedAt: timestamp('computed_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// ── Competitors ──
+
+export const competitors = pgTable('competitors', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  siteId: uuid('site_id').notNull().references(() => sites.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  websiteUrl: text('website_url'),
+  gmbPlaceId: text('gmb_place_id'),
+  distanceKm: numeric('distance_km', { precision: 5, scale: 2 }),
+  gmbRating: numeric('gmb_rating', { precision: 3, scale: 2 }),
+  gmbReviewCount: integer('gmb_review_count').default(0),
+  lastGmbPost: timestamp('last_gmb_post', { withTimezone: true }),
+  isNew: boolean('is_new').default(true),
+  firstSeenAt: timestamp('first_seen_at', { withTimezone: true }).notNull().defaultNow(),
+  lastCheckedAt: timestamp('last_checked_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// ── Reports ──
+
+export const reports = pgTable('reports', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  siteId: uuid('site_id').notNull().references(() => sites.id, { onDelete: 'cascade' }),
+  periodYear: integer('period_year').notNull(),
+  periodMonth: integer('period_month').notNull(),
+  pdfUrl: text('pdf_url'),
+  pdfSizeBytes: integer('pdf_size_bytes'),
+  emailSent: boolean('email_sent').default(false),
+  emailSentAt: timestamp('email_sent_at', { withTimezone: true }),
+  emailOpened: boolean('email_opened').default(false),
+  statsSnapshot: jsonb('stats_snapshot').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
 // ── Type exports ──
 
 export type Organization = typeof organizations.$inferSelect
@@ -302,3 +414,12 @@ export type SocialAccount = typeof socialAccounts.$inferSelect
 export type NewSocialAccount = typeof socialAccounts.$inferInsert
 export type TokenUsage = typeof tokenUsage.$inferSelect
 export type NewTokenUsage = typeof tokenUsage.$inferInsert
+
+export type Lead = typeof leads.$inferSelect
+export type NewLead = typeof leads.$inferInsert
+export type MonthlyStat = typeof monthlyStats.$inferSelect
+export type NewMonthlyStat = typeof monthlyStats.$inferInsert
+export type Competitor = typeof competitors.$inferSelect
+export type NewCompetitor = typeof competitors.$inferInsert
+export type Report = typeof reports.$inferSelect
+export type NewReport = typeof reports.$inferInsert
