@@ -128,7 +128,7 @@ export default function ReviewsPage() {
       ) : (
         <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
           {reviews.map((review) => {
-            const cfg = STATUS_CONFIG[review.reply_status] ?? STATUS_CONFIG.pending
+            const cfg = STATUS_CONFIG[review.reply_status as keyof typeof STATUS_CONFIG] ?? { label: 'En attente', color: 'text-yellow-700', bg: 'bg-yellow-100' }
             return (
               <button
                 key={review.id}

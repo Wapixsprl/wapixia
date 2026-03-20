@@ -96,7 +96,7 @@ export default function DashboardHomePage() {
     suspended: { label: 'Suspendu', color: 'bg-red-50 text-red-700' },
   }
 
-  const status = STATUS_LABELS[data.siteStatus] ?? STATUS_LABELS.setup
+  const status = STATUS_LABELS[data.siteStatus] ?? { label: 'En configuration', color: 'bg-yellow-50 text-yellow-700' }
 
   return (
     <div className="space-y-8">
