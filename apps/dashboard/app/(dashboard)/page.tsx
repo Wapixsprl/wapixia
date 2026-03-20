@@ -3,78 +3,79 @@
 import { useEffect, useState } from 'react'
 import { createBrowserClient } from '../../lib/supabase'
 
-interface UserProfile {
+interface DashboardData {
   firstName: string
   email: string
   siteName: string
   role: string
+  contentCount: number
+  pendingCount: number
+  reviewCount: number
+  avgRating: string
+  activeModules: number
+  siteStatus: string
 }
 
 const QUICK_ACTIONS = [
-  { label: 'Generer du contenu', href: '/content', color: '#F5A623', icon: '✍️' },
-  { label: 'Voir les avis', href: '/content/reviews', color: '#3B82F6', icon: '⭐' },
-  { label: 'Gerer les modules', href: '/modules', color: '#8B5CF6', icon: '🧩' },
-  { label: 'Lancer l\'onboarding', href: '/onboarding', color: '#F59E0B', icon: '🚀' },
-]
-
-const STATS = [
-  { label: 'Pages generees', value: '6', change: '+6 ce mois', icon: '📄' },
-  { label: 'Posts sociaux', value: '0', change: 'A configurer', icon: '📱' },
-  { label: 'Avis Google', value: '0', change: 'En attente', icon: '⭐' },
-  { label: 'Score visibilite', value: '--', change: 'Bientot disponible', icon: '📊' },
+  { label: 'Generer du contenu', href: '/content', icon: '✍️' },
+  { label: 'Voir les avis', href: '/content/reviews', icon: '⭐' },
+  { label: 'Gerer les modules', href: '/modules', icon: '🧩' },
+  { label: 'Lancer l\'onboarding', href: '/onboarding', icon: '🚀' },
 ]
 
 export default function DashboardHomePage() {
-  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function loadData() {
       const supabase = createBrowserClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { setLoading(false); return }
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+      // Get user info
+      const { data: userData } = await supabase.from('users').select('role, first_name').eq('id', user.id).single()
 
-      if (user) {
-        let siteName = 'Mon Site'
-        let role = 'client'
-
-        const { data: site } = await supabase
-          .from('sites')
-          .select('name')
-          .eq('owner_id', user.id)
-          .single()
-
-        if (site?.name) {
-          siteName = site.name
-        }
-
-        const { data: userData } = await supabase
-          .from('users')
-          .select('role, first_name')
-          .eq('id', user.id)
-          .single()
-
-        if (userData?.role) {
-          role = userData.role
-        }
-
-        setProfile({
-          firstName:
-            userData?.first_name ??
-            (user.user_metadata?.first_name as string) ??
-            user.email?.split('@')[0] ??
-            'Utilisateur',
-          email: user.email ?? '',
-          siteName,
-          role,
-        })
+      // Get site (own or first for superadmin)
+      let site: { id: string; name: string; status: string } | null = null
+      const { data: ownSite } = await supabase.from('sites').select('id, name, status').eq('owner_user_id', user.id).single()
+      if (ownSite) site = ownSite
+      else {
+        const { data: firstSite } = await supabase.from('sites').select('id, name, status').limit(1).single()
+        if (firstSite) site = firstSite
       }
 
+      let contentCount = 0, pendingCount = 0, reviewCount = 0, avgRating = '0', activeModules = 0
+      if (site) {
+        const [contentsRes, pendingRes, reviewsRes, modulesRes] = await Promise.all([
+          supabase.from('ai_contents').select('*', { count: 'exact', head: true }).eq('site_id', site.id),
+          supabase.from('ai_contents').select('*', { count: 'exact', head: true }).eq('site_id', site.id).eq('status', 'pending_validation'),
+          supabase.from('google_reviews').select('id, rating').eq('site_id', site.id),
+          supabase.from('site_modules').select('*', { count: 'exact', head: true }).eq('site_id', site.id).eq('status', 'active'),
+        ])
+        contentCount = contentsRes.count ?? 0
+        pendingCount = pendingRes.count ?? 0
+        activeModules = modulesRes.count ?? 0
+        if (reviewsRes.data && reviewsRes.data.length > 0) {
+          reviewCount = reviewsRes.data.length
+          avgRating = (reviewsRes.data.reduce((s: number, r: { rating: number }) => s + r.rating, 0) / reviewsRes.data.length).toFixed(1)
+        }
+      }
+
+      setData({
+        firstName: userData?.first_name ?? user.email?.split('@')[0] ?? 'Utilisateur',
+        email: user.email ?? '',
+        siteName: site?.name ?? 'Aucun site',
+        role: userData?.role ?? 'client',
+        contentCount,
+        pendingCount,
+        reviewCount,
+        avgRating,
+        activeModules,
+        siteStatus: site?.status ?? 'setup',
+      })
       setLoading(false)
     }
-
     void loadData()
   }, [])
 
@@ -86,30 +87,54 @@ export default function DashboardHomePage() {
     )
   }
 
+  if (!data) return null
+
+  const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+    setup: { label: 'En configuration', color: 'bg-yellow-50 text-yellow-700' },
+    staging: { label: 'En test', color: 'bg-blue-50 text-blue-700' },
+    live: { label: 'En ligne', color: 'bg-green-50 text-green-700' },
+    suspended: { label: 'Suspendu', color: 'bg-red-50 text-red-700' },
+  }
+
+  const status = STATUS_LABELS[data.siteStatus] ?? STATUS_LABELS.setup
+
   return (
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">
-          Bienvenue, {profile?.firstName} 👋
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-900">Bienvenue, {data.firstName}</h1>
         <p className="mt-1 text-sm text-gray-500">
-          {profile?.email} &middot; <span className="inline-flex items-center rounded-full bg-[#F5A623]/10 px-2 py-0.5 text-xs font-medium text-[#F5A623]">{profile?.role}</span>
+          {data.email} &middot;{' '}
+          <span className="inline-flex items-center rounded-full bg-[#F5A623]/10 px-2 py-0.5 text-xs font-medium text-[#F5A623]">
+            {data.role}
+          </span>
         </p>
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {STATS.map((stat) => (
-          <div key={stat.label} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-500">{stat.label}</span>
-              <span className="text-2xl">{stat.icon}</span>
-            </div>
-            <p className="mt-2 text-3xl font-bold text-gray-900">{stat.value}</p>
-            <p className="mt-1 text-xs text-gray-400">{stat.change}</p>
-          </div>
-        ))}
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <p className="text-sm font-medium text-gray-500">Contenus generes</p>
+          <p className="mt-2 text-3xl font-bold text-gray-900">{data.contentCount}</p>
+          <p className="mt-1 text-xs text-orange-500">{data.pendingCount} en attente</p>
+        </div>
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <p className="text-sm font-medium text-gray-500">Avis Google</p>
+          <p className="mt-2 text-3xl font-bold text-gray-900">{data.reviewCount}</p>
+          <p className="mt-1 text-xs text-yellow-500">{data.avgRating} &#9733; moyenne</p>
+        </div>
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <p className="text-sm font-medium text-gray-500">Modules actifs</p>
+          <p className="mt-2 text-3xl font-bold text-[#F5A623]">{data.activeModules}</p>
+          <p className="mt-1 text-xs text-gray-400">sur 3 disponibles</p>
+        </div>
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <p className="text-sm font-medium text-gray-500">Site</p>
+          <p className="mt-2 text-lg font-bold text-gray-900">{data.siteName}</p>
+          <span className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${status.color}`}>
+            {status.label}
+          </span>
+        </div>
       </div>
 
       {/* Quick Actions */}
@@ -117,54 +142,12 @@ export default function DashboardHomePage() {
         <h2 className="mb-4 text-lg font-semibold text-gray-900">Actions rapides</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {QUICK_ACTIONS.map((action) => (
-            <a
-              key={action.href}
-              href={action.href}
-              className="group flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:shadow-md hover:border-gray-300"
-            >
-              <div
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg text-xl"
-                style={{ backgroundColor: `${action.color}15` }}
-              >
-                {action.icon}
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-900 group-hover:text-[#F5A623] transition-colors">
-                  {action.label}
-                </p>
-              </div>
+            <a key={action.href} href={action.href}
+              className="group flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:shadow-md hover:border-[#F5A623]/30">
+              <span className="text-2xl">{action.icon}</span>
+              <p className="text-sm font-semibold text-gray-900 group-hover:text-[#F5A623] transition-colors">{action.label}</p>
             </a>
           ))}
-        </div>
-      </div>
-
-      {/* Site Info */}
-      <div>
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">Mon site</h2>
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-gray-900">{profile?.siteName}</h3>
-              <p className="mt-1 text-sm text-gray-500">Organisation WapixIA</p>
-            </div>
-            <span className="inline-flex items-center rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
-              Actif
-            </span>
-          </div>
-          <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            <div className="rounded-lg bg-gray-50 p-4">
-              <p className="text-xs font-medium text-gray-500">Statut</p>
-              <p className="mt-1 text-sm font-semibold text-gray-900">En ligne</p>
-            </div>
-            <div className="rounded-lg bg-gray-50 p-4">
-              <p className="text-xs font-medium text-gray-500">Theme</p>
-              <p className="mt-1 text-sm font-semibold text-gray-900">Par defaut</p>
-            </div>
-            <div className="rounded-lg bg-gray-50 p-4">
-              <p className="text-xs font-medium text-gray-500">Derniere MAJ</p>
-              <p className="mt-1 text-sm font-semibold text-gray-900">Aujourd'hui</p>
-            </div>
-          </div>
         </div>
       </div>
     </div>

@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { apiClient } from '../../../../lib/api'
 import { createBrowserClient } from '../../../../lib/supabase'
 
 // ─── Types ───────────────────────────────────────────────────────
@@ -13,10 +12,6 @@ interface ModuleConfig {
   description: string
   is_active: boolean
   settings: Record<string, unknown>
-}
-
-interface ModuleResponse {
-  data: ModuleConfig
 }
 
 const WEEKDAYS = [
@@ -52,16 +47,14 @@ export default function ModuleSettingsPage() {
   useEffect(() => {
     async function resolveSite() {
       const supabase = createBrowserClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+      const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-      const { data: site } = await supabase
-        .from('sites')
-        .select('id')
-        .eq('owner_id', user.id)
-        .single()
+      const { data: site } = await supabase.from('sites').select('id').eq('owner_user_id', user.id).single()
       if (site?.id) setSiteId(site.id)
+      else {
+        const { data: first } = await supabase.from('sites').select('id').limit(1).single()
+        if (first?.id) setSiteId(first.id)
+      }
     }
     void resolveSite()
   }, [])
@@ -71,11 +64,22 @@ export default function ModuleSettingsPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await apiClient<ModuleResponse>(
-        `/api/v1/sites/${siteId}/modules/${moduleId}`,
-      )
-      setConfig(res.data)
-      setSettings(res.data.settings)
+      const supabase = createBrowserClient()
+      // Get module from catalog
+      const { data: catalogItem } = await supabase.from('module_catalog').select('*').eq('id', moduleId).single()
+      // Get site module config
+      const { data: siteModule } = await supabase.from('site_modules').select('*').eq('site_id', siteId).eq('module_id', moduleId).single()
+      if (catalogItem) {
+        setConfig({
+          id: catalogItem.id,
+          slug: catalogItem.id,
+          name: catalogItem.name,
+          description: catalogItem.description,
+          is_active: siteModule?.status === 'active',
+          settings: (siteModule?.config as Record<string, unknown>) ?? {},
+        })
+        setSettings((siteModule?.config as Record<string, unknown>) ?? {})
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur de chargement')
     } finally {
@@ -123,10 +127,11 @@ export default function ModuleSettingsPage() {
     setError(null)
     setSuccess(null)
     try {
-      await apiClient(`/api/v1/sites/${siteId}/modules/${moduleId}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ settings }),
-      })
+      const supabase = createBrowserClient()
+      const { data: existing } = await supabase.from('site_modules').select('id').eq('site_id', siteId).eq('module_id', moduleId).single()
+      if (existing) {
+        await supabase.from('site_modules').update({ config: settings }).eq('id', existing.id)
+      }
       setSuccess('Configuration sauvegardee')
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
@@ -142,10 +147,8 @@ export default function ModuleSettingsPage() {
     setGenerating(true)
     setError(null)
     try {
-      await apiClient(`/api/v1/sites/${siteId}/modules/${moduleId}/generate`, {
-        method: 'POST',
-      })
-      setSuccess('Generation lancee avec succes')
+      // Generation will be handled by the API backend when deployed
+      setSuccess('Generation sera disponible prochainement')
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur de generation')
@@ -158,7 +161,7 @@ export default function ModuleSettingsPage() {
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#00D4B1]" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#F5A623]" />
       </div>
     )
   }
@@ -170,7 +173,7 @@ export default function ModuleSettingsPage() {
         <button
           type="button"
           onClick={() => router.push('/modules')}
-          className="mt-4 text-sm font-medium text-[#00D4B1] hover:underline"
+          className="mt-4 text-sm font-medium text-[#F5A623] hover:underline"
         >
           Retour aux modules
         </button>
@@ -263,7 +266,7 @@ export default function ModuleSettingsPage() {
           type="button"
           onClick={() => void handleSave()}
           disabled={saving}
-          className="rounded-lg bg-[#00D4B1] px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#00BFA0] disabled:opacity-50"
+          className="rounded-lg bg-[#F5A623] px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#E09600] disabled:opacity-50"
         >
           {saving ? 'Sauvegarde...' : 'Sauvegarder'}
         </button>
@@ -328,7 +331,7 @@ function SocialPostsSettings({
           <label className="text-sm font-medium text-gray-700">
             Posts par mois
           </label>
-          <span className="text-sm font-semibold text-[#00D4B1]">
+          <span className="text-sm font-semibold text-[#F5A623]">
             {postsPerMonth}
           </span>
         </div>
@@ -339,7 +342,7 @@ function SocialPostsSettings({
           step={4}
           value={postsPerMonth}
           onChange={(e) => onUpdate('posts_per_month', Number(e.target.value))}
-          className="w-full accent-[#00D4B1]"
+          className="w-full accent-[#F5A623]"
         />
         <div className="mt-1 flex justify-between text-xs text-gray-400">
           <span>8</span>
@@ -363,7 +366,7 @@ function SocialPostsSettings({
               key={p.key}
               className={`flex cursor-pointer items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
                 platforms.includes(p.key)
-                  ? 'border-[#00D4B1] bg-[#00D4B1]/5 text-gray-900'
+                  ? 'border-[#F5A623] bg-[#F5A623]/5 text-gray-900'
                   : 'border-gray-200 text-gray-500 hover:border-gray-300'
               }`}
             >
@@ -393,7 +396,7 @@ function SocialPostsSettings({
               onClick={() => toggleDay(d.key)}
               className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                 postingDays.includes(d.key)
-                  ? 'bg-[#00D4B1] text-white'
+                  ? 'bg-[#F5A623] text-white'
                   : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
               }`}
             >
@@ -411,7 +414,7 @@ function SocialPostsSettings({
         <select
           value={postingHour}
           onChange={(e) => onUpdate('posting_hour', Number(e.target.value))}
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-[#00D4B1] focus:outline-none focus:ring-1 focus:ring-[#00D4B1]"
+          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-[#F5A623] focus:outline-none focus:ring-1 focus:ring-[#F5A623]"
         >
           {HOURS.map((h) => (
             <option key={h.value} value={h.value}>
@@ -455,7 +458,7 @@ function GmbReviewsSettings({
         <select
           value={s.getString('check_frequency', 'daily')}
           onChange={(e) => onUpdate('check_frequency', e.target.value)}
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-[#00D4B1] focus:outline-none focus:ring-1 focus:ring-[#00D4B1]"
+          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-[#F5A623] focus:outline-none focus:ring-1 focus:ring-[#F5A623]"
         >
           <option value="hourly">Toutes les heures</option>
           <option value="daily">Quotidien</option>
@@ -521,7 +524,7 @@ function BlogSeoSettings({
           <label className="text-sm font-medium text-gray-700">
             Articles par mois
           </label>
-          <span className="text-sm font-semibold text-[#00D4B1]">
+          <span className="text-sm font-semibold text-[#F5A623]">
             {s.getNumber('articles_per_month', 4)}
           </span>
         </div>
@@ -534,7 +537,7 @@ function BlogSeoSettings({
           onChange={(e) =>
             onUpdate('articles_per_month', Number(e.target.value))
           }
-          className="w-full accent-[#00D4B1]"
+          className="w-full accent-[#F5A623]"
         />
         <div className="mt-1 flex justify-between text-xs text-gray-400">
           <span>4</span>
@@ -557,7 +560,7 @@ function BlogSeoSettings({
             min={300}
             max={3000}
             step={100}
-            className="w-24 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-[#00D4B1] focus:outline-none focus:ring-1 focus:ring-[#00D4B1]"
+            className="w-24 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-[#F5A623] focus:outline-none focus:ring-1 focus:ring-[#F5A623]"
           />
           <span className="text-sm text-gray-400">a</span>
           <input
@@ -569,7 +572,7 @@ function BlogSeoSettings({
             min={300}
             max={5000}
             step={100}
-            className="w-24 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-[#00D4B1] focus:outline-none focus:ring-1 focus:ring-[#00D4B1]"
+            className="w-24 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-[#F5A623] focus:outline-none focus:ring-1 focus:ring-[#F5A623]"
           />
           <span className="text-sm text-gray-400">mots</span>
         </div>
@@ -584,13 +587,13 @@ function BlogSeoSettings({
           {topics.map((topic) => (
             <span
               key={topic}
-              className="inline-flex items-center gap-1 rounded-full bg-[#00D4B1]/10 px-3 py-1 text-xs font-medium text-[#00D4B1]"
+              className="inline-flex items-center gap-1 rounded-full bg-[#F5A623]/10 px-3 py-1 text-xs font-medium text-[#F5A623]"
             >
               {topic}
               <button
                 type="button"
                 onClick={() => removeTopic(topic)}
-                className="ml-0.5 text-[#00D4B1]/60 hover:text-[#00D4B1]"
+                className="ml-0.5 text-[#F5A623]/60 hover:text-[#F5A623]"
               >
                 <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -611,7 +614,7 @@ function BlogSeoSettings({
               }
             }}
             placeholder="Ajouter un sujet..."
-            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-[#00D4B1] focus:outline-none focus:ring-1 focus:ring-[#00D4B1]"
+            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-[#F5A623] focus:outline-none focus:ring-1 focus:ring-[#F5A623]"
           />
           <button
             type="button"
@@ -651,8 +654,8 @@ function ToggleRow({
       <button
         type="button"
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#00D4B1] focus:ring-offset-2 ${
-          checked ? 'bg-[#00D4B1]' : 'bg-gray-200'
+        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#F5A623] focus:ring-offset-2 ${
+          checked ? 'bg-[#F5A623]' : 'bg-gray-200'
         }`}
         role="switch"
         aria-checked={checked}
