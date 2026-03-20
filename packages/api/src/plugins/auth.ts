@@ -24,6 +24,13 @@ async function authPlugin(fastify: FastifyInstance) {
     // Skip auth for health check
     if (request.url === '/health') return
 
+    // Skip auth for webhook routes (they use their own verification)
+    if (request.url.startsWith('/api/v1/webhooks/')) return
+
+    // Skip auth if route config has skipAuth: true
+    const routeConfig = (request.routeOptions?.config ?? {}) as Record<string, unknown>
+    if (routeConfig.skipAuth === true) return
+
     const authHeader = request.headers.authorization
     if (!authHeader?.startsWith('Bearer ')) {
       return reply.status(401).send({

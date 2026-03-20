@@ -279,6 +279,76 @@ export const tokenUsage = pgTable('token_usage', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
+// ── Subscriptions ──
+
+export const subscriptions = pgTable('subscriptions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  siteId: uuid('site_id').notNull().references(() => sites.id),
+  organizationId: uuid('organization_id').notNull().references(() => organizations.id),
+  type: text('type').notNull(), // 'site_subscription' | 'hosting' | 'module'
+  moduleId: text('module_id').references(() => moduleCatalog.id),
+  amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
+  currency: text('currency').default('EUR'),
+  billingCycle: text('billing_cycle').notNull().default('monthly'), // 'monthly' | 'yearly'
+  paymentProvider: text('payment_provider'), // 'mollie' | 'stripe'
+  externalSubId: text('external_sub_id'),
+  mollieMandateId: text('mollie_mandate_id'),
+  status: text('status').notNull().default('trialing'), // 'trialing' | 'active' | 'past_due' | 'cancelled' | 'paused' | 'unpaid'
+  trialEnd: timestamp('trial_end', { withTimezone: true }),
+  currentPeriodStart: timestamp('current_period_start', { withTimezone: true }),
+  currentPeriodEnd: timestamp('current_period_end', { withTimezone: true }),
+  nextBillingDate: timestamp('next_billing_date', { withTimezone: true }),
+  cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+  cancelReason: text('cancel_reason'),
+  pausedAt: timestamp('paused_at', { withTimezone: true }),
+  dunningAttempts: integer('dunning_attempts').default(0),
+  lastDunningAt: timestamp('last_dunning_at', { withTimezone: true }),
+  dunningResolvedAt: timestamp('dunning_resolved_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// ── Payments ──
+
+export const payments = pgTable('payments', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  subscriptionId: uuid('subscription_id').notNull().references(() => subscriptions.id),
+  organizationId: uuid('organization_id').notNull().references(() => organizations.id),
+  amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
+  currency: text('currency').default('EUR'),
+  status: text('status').notNull(), // 'pending' | 'paid' | 'failed' | 'refunded' | 'chargeback' | 'expired'
+  paymentProvider: text('payment_provider'), // 'mollie' | 'stripe'
+  externalPaymentId: text('external_payment_id').unique(),
+  paymentMethod: text('payment_method'),
+  failureReason: text('failure_reason'),
+  invoicePdfUrl: text('invoice_pdf_url'),
+  invoiceNumber: text('invoice_number').unique(),
+  paidAt: timestamp('paid_at', { withTimezone: true }),
+  refundedAt: timestamp('refunded_at', { withTimezone: true }),
+  refundReason: text('refund_reason'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// ── Commissions ──
+
+export const commissions = pgTable('commissions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  resellerId: uuid('reseller_id').notNull().references(() => organizations.id),
+  paymentId: uuid('payment_id').notNull().references(() => payments.id),
+  siteId: uuid('site_id').notNull().references(() => sites.id),
+  baseAmount: numeric('base_amount', { precision: 10, scale: 2 }).notNull(),
+  commissionRate: numeric('commission_rate', { precision: 5, scale: 2 }).notNull(),
+  commissionAmount: numeric('commission_amount', { precision: 10, scale: 2 }).notNull(),
+  status: text('status').notNull().default('pending'), // 'pending' | 'processing' | 'paid' | 'cancelled'
+  stripeTransferId: text('stripe_transfer_id'),
+  periodStart: timestamp('period_start', { withTimezone: true }).notNull(),
+  periodEnd: timestamp('period_end', { withTimezone: true }).notNull(),
+  paidAt: timestamp('paid_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
 // ── Type exports ──
 
 export type Organization = typeof organizations.$inferSelect
@@ -302,3 +372,9 @@ export type SocialAccount = typeof socialAccounts.$inferSelect
 export type NewSocialAccount = typeof socialAccounts.$inferInsert
 export type TokenUsage = typeof tokenUsage.$inferSelect
 export type NewTokenUsage = typeof tokenUsage.$inferInsert
+export type Subscription = typeof subscriptions.$inferSelect
+export type NewSubscription = typeof subscriptions.$inferInsert
+export type Payment = typeof payments.$inferSelect
+export type NewPayment = typeof payments.$inferInsert
+export type Commission = typeof commissions.$inferSelect
+export type NewCommission = typeof commissions.$inferInsert

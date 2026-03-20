@@ -25,6 +25,12 @@ export const QUEUE_NAMES = {
   SMS: 'notifications:sms',
   ALERT: 'notifications:alert',
   SITE_GENERATE: 'sites:generate',
+
+  // Billing
+  INVOICE: 'billing:invoice',
+  COMMISSION: 'billing:commission',
+  DUNNING: 'billing:dunning',
+  BILLING_RECURRING: 'billing:recurring',
 } as const
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES]
@@ -82,6 +88,28 @@ const QUEUE_JOB_OPTIONS: Record<QueueName, JobsOptions> = {
   [QUEUE_NAMES.SITE_GENERATE]: {
     ...DEFAULT_JOB_OPTIONS,
     attempts: 2,
+    backoff: { type: 'exponential', delay: 60_000 },
+  },
+
+  // Billing queues
+  [QUEUE_NAMES.INVOICE]: {
+    ...DEFAULT_JOB_OPTIONS,
+    attempts: 5,
+    backoff: { type: 'exponential', delay: 10_000 },
+  },
+  [QUEUE_NAMES.COMMISSION]: {
+    ...DEFAULT_JOB_OPTIONS,
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 15_000 },
+  },
+  [QUEUE_NAMES.DUNNING]: {
+    ...DEFAULT_JOB_OPTIONS,
+    attempts: 2,
+    backoff: { type: 'exponential', delay: 30_000 },
+  },
+  [QUEUE_NAMES.BILLING_RECURRING]: {
+    ...DEFAULT_JOB_OPTIONS,
+    attempts: 3,
     backoff: { type: 'exponential', delay: 60_000 },
   },
 }

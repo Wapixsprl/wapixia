@@ -23,6 +23,16 @@ const envSchema = z.object({
 
   // AI generation
   ANTHROPIC_API_KEY: z.string().min(1).optional(),
+
+  // Mollie (payment gateway)
+  MOLLIE_API_KEY: z.string().min(1).optional(),
+
+  // Stripe (commission transfers)
+  STRIPE_SECRET_KEY: z.string().min(1).optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
+
+  // API public URL (for webhook callbacks)
+  API_PUBLIC_URL: z.string().url().optional(),
 })
 
 export type Env = z.infer<typeof envSchema>
