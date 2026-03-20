@@ -21,8 +21,9 @@ async function authPlugin(fastify: FastifyInstance) {
   fastify.decorateRequest('user', null)
 
   fastify.addHook('onRequest', async (request: FastifyRequest, reply: FastifyReply) => {
-    // Skip auth for health check
+    // Skip auth for health check and internal endpoints (they use their own auth)
     if (request.url === '/health') return
+    if (request.url.startsWith('/api/v1/internal/')) return
 
     const authHeader = request.headers.authorization
     if (!authHeader?.startsWith('Bearer ')) {

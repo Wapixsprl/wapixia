@@ -14,6 +14,8 @@ export type {
   EmailJobData,
   AlertJobData,
   SiteGenerateJobData,
+  SiteProvisionJobData,
+  DomainVerifyJobData,
   ContentGenerationResult,
   PublishResult,
   AlertResult,
@@ -29,6 +31,8 @@ export {
   emailQueue,
   alertQueue,
   siteGenerateQueue,
+  siteProvisionQueue,
+  domainVerifyQueue,
 } from './queues.js'
 
 // Workers
@@ -38,6 +42,8 @@ export { gmbPostWorker } from './workers/gmb-post.worker.js'
 export { reviewReplyWorker } from './workers/review-reply.worker.js'
 export { publishWorker } from './workers/publish.worker.js'
 export { alertWorker } from './workers/alert.worker.js'
+export { siteProvisionWorker } from './workers/site-provision.worker.js'
+export { domainVerifyWorker } from './workers/domain-verify.worker.js'
 
 // Scheduler
 export { startScheduler } from './scheduler.js'

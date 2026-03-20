@@ -25,6 +25,8 @@ export const QUEUE_NAMES = {
   SMS: 'notifications:sms',
   ALERT: 'notifications:alert',
   SITE_GENERATE: 'sites:generate',
+  SITE_PROVISION: 'sites:provision',
+  DOMAIN_VERIFY: 'sites:domain-verify',
 } as const
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES]
@@ -83,6 +85,17 @@ const QUEUE_JOB_OPTIONS: Record<QueueName, JobsOptions> = {
     ...DEFAULT_JOB_OPTIONS,
     attempts: 2,
     backoff: { type: 'exponential', delay: 60_000 },
+  },
+  [QUEUE_NAMES.SITE_PROVISION]: {
+    ...DEFAULT_JOB_OPTIONS,
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 30_000 },
+  },
+  [QUEUE_NAMES.DOMAIN_VERIFY]: {
+    ...DEFAULT_JOB_OPTIONS,
+    attempts: 1,
+    removeOnComplete: { count: 1000 },
+    removeOnFail: { count: 500 },
   },
 }
 
