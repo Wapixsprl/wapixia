@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { apiClient } from '../../../../lib/api'
+import { createBrowserClient } from '../../../../lib/supabase'
 import type { Answers, OnboardingSession } from '../types'
 import StepIdentity from './steps/StepIdentity'
 import StepServices from './steps/StepServices'
@@ -43,6 +43,8 @@ interface Props {
 
 export default function OnboardingWizard({ siteId, initialSession }: Props) {
   const router = useRouter()
+  const supabase = createBrowserClient()
+  const [sessionId, setSessionId] = useState<string | null>(initialSession?.id ?? null)
   const [currentStep, setCurrentStep] = useState(initialSession?.current_step ?? 1)
   const [answers, setAnswers] = useState<Answers>(initialSession?.answers ?? {})
   const [saving, setSaving] = useState(false)
@@ -55,17 +57,43 @@ export default function OnboardingWizard({ siteId, initialSession }: Props) {
       try {
         setSaving(true)
         setError(null)
-        await apiClient(`/api/v1/sites/${siteId}/onboarding/step`, {
-          method: 'PUT',
-          body: JSON.stringify({ step, answers: data }),
-        })
+
+        if (sessionId) {
+          // Update existing session
+          await supabase
+            .from('onboarding_sessions')
+            .update({
+              current_step: step,
+              answers: data,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', sessionId)
+        } else {
+          // Create new session
+          const { data: { user } } = await supabase.auth.getUser()
+          const { data: newSession } = await supabase
+            .from('onboarding_sessions')
+            .insert({
+              site_id: siteId,
+              user_id: user?.id,
+              current_step: step,
+              answers: data,
+              generation_status: 'pending',
+            })
+            .select('id')
+            .single()
+
+          if (newSession) {
+            setSessionId(newSession.id)
+          }
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erreur de sauvegarde')
       } finally {
         setSaving(false)
       }
     },
-    [siteId],
+    [siteId, sessionId, supabase],
   )
 
   // Auto-save when step changes
@@ -98,15 +126,61 @@ export default function OnboardingWizard({ siteId, initialSession }: Props) {
     try {
       setSubmitting(true)
       setError(null)
-      // Save the last step first
+
+      // Save the last step
       await saveStep(currentStep, answers)
-      // Trigger generation
-      await apiClient(`/api/v1/sites/${siteId}/onboarding/complete`, {
-        method: 'POST',
-      })
-      router.push('/onboarding/generating')
+
+      // Update onboarding session status
+      if (sessionId) {
+        await supabase
+          .from('onboarding_sessions')
+          .update({
+            generation_status: 'done',
+            answers,
+            current_step: TOTAL_STEPS,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', sessionId)
+      }
+
+      // Save answers to site's onboarding_data and update site name/sector
+      const siteUpdate: Record<string, unknown> = {
+        onboarding_data: answers,
+        onboarding_done: true,
+        updated_at: new Date().toISOString(),
+      }
+
+      // Update site name if provided
+      if (answers.business_name) {
+        siteUpdate.name = answers.business_name
+        siteUpdate.slug = String(answers.business_name)
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '')
+      }
+
+      // Update sector if provided
+      if (answers.sector) {
+        siteUpdate.sector = answers.sector
+      }
+
+      // Update colors if provided
+      if (answers.primary_color) {
+        siteUpdate.primary_color = answers.primary_color
+      }
+      if (answers.secondary_color) {
+        siteUpdate.secondary_color = answers.secondary_color
+      }
+
+      await supabase
+        .from('sites')
+        .update(siteUpdate)
+        .eq('id', siteId)
+
+      // Redirect to dashboard
+      router.push('/')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur lors du lancement')
+      setError(err instanceof Error ? err.message : 'Erreur lors de la finalisation')
       setSubmitting(false)
     }
   }
@@ -138,7 +212,7 @@ export default function OnboardingWizard({ siteId, initialSession }: Props) {
         </div>
         <div className="h-2 overflow-hidden rounded-full bg-gray-200">
           <div
-            className="h-full rounded-full bg-[#00D4B1] transition-all duration-500 ease-out"
+            className="h-full rounded-full bg-[#F5A623] transition-all duration-500 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -176,7 +250,7 @@ export default function OnboardingWizard({ siteId, initialSession }: Props) {
             <button
               type="button"
               onClick={goNext}
-              className="rounded-lg bg-[#00D4B1] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#00BFA0]"
+              className="rounded-lg bg-[#F5A623] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#E09510]"
             >
               Suivant
             </button>
@@ -185,15 +259,15 @@ export default function OnboardingWizard({ siteId, initialSession }: Props) {
               type="button"
               onClick={() => void handleComplete()}
               disabled={submitting}
-              className="rounded-lg bg-[#00D4B1] px-6 py-3 text-sm font-bold text-white transition-all hover:bg-[#00BFA0] hover:shadow-lg disabled:opacity-60"
+              className="rounded-lg bg-[#F5A623] px-6 py-3 text-sm font-bold text-white transition-all hover:bg-[#E09510] hover:shadow-lg disabled:opacity-60"
             >
               {submitting ? (
                 <span className="flex items-center gap-2">
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                  Lancement...
+                  Finalisation...
                 </span>
               ) : (
-                'Creer mon site intelligent'
+                'Terminer la configuration'
               )}
             </button>
           )}

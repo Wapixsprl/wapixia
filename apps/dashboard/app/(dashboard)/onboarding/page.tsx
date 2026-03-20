@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '../../../lib/supabase'
-import { apiClient } from '../../../lib/api'
 import type { OnboardingSession } from './types'
 import OnboardingWizard from './components/OnboardingWizard'
 
@@ -28,37 +27,89 @@ export default function OnboardingPage() {
         }
 
         // Get the user's site
-        const { data: site } = await supabase
+        let { data: site } = await supabase
           .from('sites')
-          .select('id')
-          .eq('owner_id', user.id)
+          .select('id, onboarding_done, status')
+          .eq('owner_user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
           .single()
 
+        // If no site exists, create one automatically
         if (!site) {
-          setError('Aucun site trouve. Veuillez contacter le support.')
-          setLoading(false)
-          return
+          // Get user's organization
+          const { data: userData } = await supabase
+            .from('users')
+            .select('organization_id')
+            .eq('id', user.id)
+            .single()
+
+          if (!userData) {
+            setError('Profil utilisateur introuvable.')
+            setLoading(false)
+            return
+          }
+
+          const slug = `site-${Date.now()}`
+          const { data: newSite, error: createErr } = await supabase
+            .from('sites')
+            .insert({
+              organization_id: userData.organization_id,
+              owner_user_id: user.id,
+              name: 'Nouveau Site',
+              slug,
+              sector: 'autre',
+              temp_domain: `${slug}.wapixia.be`,
+              hosting_type: 'wapixia',
+              plan: 'subscription',
+              plan_price: 49,
+              status: 'setup',
+            })
+            .select('id, onboarding_done, status')
+            .single()
+
+          if (createErr || !newSite) {
+            setError('Impossible de creer le site. Veuillez reessayer.')
+            setLoading(false)
+            return
+          }
+
+          site = newSite
         }
 
         setSiteId(site.id as string)
 
-        // Fetch existing onboarding session
-        try {
-          const existing = await apiClient<OnboardingSession>(
-            `/api/v1/sites/${site.id}/onboarding`,
-          )
-          if (existing.status === 'generating') {
+        // If onboarding already done, redirect to dashboard
+        if (site.onboarding_done) {
+          router.push('/')
+          return
+        }
+
+        // Check for existing onboarding session in Supabase
+        const { data: existingSession } = await supabase
+          .from('onboarding_sessions')
+          .select('id, site_id, current_step, answers, generation_status')
+          .eq('site_id', site.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
+
+        if (existingSession) {
+          if (existingSession.generation_status === 'generating') {
             router.push('/onboarding/generating')
             return
           }
-          if (existing.status === 'done') {
-            router.push('/overview')
+          if (existingSession.generation_status === 'done') {
+            router.push('/')
             return
           }
-          setSession(existing)
-        } catch {
-          // No session yet, that's fine — start fresh
-          setSession(null)
+          setSession({
+            id: existingSession.id,
+            site_id: existingSession.site_id,
+            current_step: existingSession.current_step ?? 1,
+            answers: existingSession.answers ?? {},
+            status: (existingSession.generation_status ?? 'in_progress') as OnboardingSession['status'],
+          })
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erreur de chargement')
@@ -73,7 +124,7 @@ export default function OnboardingPage() {
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#00D4B1]" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#F5A623]" />
       </div>
     )
   }
