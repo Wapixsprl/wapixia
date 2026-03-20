@@ -1,9 +1,0 @@
-{
-  "buildCommand": "pnpm turbo build --filter=@wapixia/dashboard...",
-  "installCommand": "pnpm install",
-  "outputDirectory": "apps/dashboard/.next",
-  "routes": [
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/" }
-  ]
-}
