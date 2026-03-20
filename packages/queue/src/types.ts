@@ -50,6 +50,17 @@ export interface SiteGenerateJobData {
   sessionId: string
 }
 
+// ── Infrastructure jobs ──
+
+export interface SiteProvisionJobData {
+  siteId: string
+}
+
+export interface DomainVerifyJobData {
+  siteId: string
+  domain: string
+}
+
 // ── Worker result types ──
 
 export interface ContentGenerationResult {

@@ -1,9 +1,12 @@
 import 'dotenv/config'
 import Fastify from 'fastify'
 import { env } from './env.js'
+import { logger } from './lib/logger.js'
 import { authPluginRegistration } from './plugins/auth.js'
 import { corsPluginRegistration } from './plugins/cors.js'
 import { rateLimitPluginRegistration } from './plugins/rate-limit.js'
+import { healthRoutes } from './routes/health.js'
+import { alertRoutes } from './routes/internal/alerts.js'
 import { meRoutes } from './routes/auth/me.js'
 import { inviteRoutes } from './routes/auth/invite.js'
 import { organizationsRoutes } from './routes/organizations/index.js'
@@ -22,17 +25,16 @@ const app = Fastify({
   },
 })
 
+// Health check — registered BEFORE auth plugin (no auth needed)
+await app.register(healthRoutes)
+
 // Plugins
 await app.register(corsPluginRegistration)
 await app.register(rateLimitPluginRegistration)
 await app.register(authPluginRegistration)
 
-// Health check (no auth)
-app.get('/health', async () => ({
-  status: 'ok',
-  service: 'wapixia-api',
-  timestamp: new Date().toISOString(),
-}))
+// Internal routes (use their own auth via x-internal-secret header)
+await app.register(alertRoutes)
 
 // Routes
 await app.register(meRoutes)
@@ -50,8 +52,8 @@ await app.register(socialRoutes)
 // Start
 try {
   await app.listen({ port: env.PORT, host: '0.0.0.0' })
-  app.log.info(`🚀 API running on http://localhost:${env.PORT}`)
+  logger.info(`API running on http://localhost:${env.PORT}`)
 } catch (err) {
-  app.log.error(err)
+  logger.error(err, 'Failed to start API server')
   process.exit(1)
 }
