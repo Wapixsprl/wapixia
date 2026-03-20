@@ -10,6 +10,7 @@ import type {
   EmailJobData,
   AlertJobData,
   SiteGenerateJobData,
+  MonthlyReportJobData,
 } from './types.js'
 
 // ── Content generation queues ──
@@ -34,3 +35,7 @@ export const alertQueue = createQueue<AlertJobData>(QUEUE_NAMES.ALERT)
 // ── Site generation queue ──
 
 export const siteGenerateQueue = createQueue<SiteGenerateJobData>(QUEUE_NAMES.SITE_GENERATE)
+
+// ── Report queue ──
+
+export const monthlyReportQueue = createQueue<MonthlyReportJobData>(QUEUE_NAMES.MONTHLY_REPORT)

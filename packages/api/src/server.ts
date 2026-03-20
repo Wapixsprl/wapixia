@@ -15,6 +15,12 @@ import { modulesRoutes } from './routes/modules/index.js'
 import { contentsRoutes } from './routes/contents/index.js'
 import { reviewsRoutes } from './routes/reviews/index.js'
 import { socialRoutes } from './routes/social/index.js'
+import { dashboardRoutes } from './routes/dashboard/index.js'
+import { statsRoutes } from './routes/dashboard/stats.js'
+import { reportsRoutes } from './routes/dashboard/reports.js'
+import { leadsRoutes } from './routes/dashboard/leads.js'
+import { visibilityRoutes } from './routes/dashboard/visibility.js'
+import { competitorsRoutes } from './routes/dashboard/competitors.js'
 
 const app = Fastify({
   logger: {
@@ -46,6 +52,12 @@ await app.register(modulesRoutes)
 await app.register(contentsRoutes)
 await app.register(reviewsRoutes)
 await app.register(socialRoutes)
+await app.register(dashboardRoutes)
+await app.register(statsRoutes)
+await app.register(reportsRoutes)
+await app.register(leadsRoutes)
+await app.register(visibilityRoutes)
+await app.register(competitorsRoutes)
 
 // Start
 try {
