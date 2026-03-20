@@ -10,6 +10,10 @@ import type {
   EmailJobData,
   AlertJobData,
   SiteGenerateJobData,
+  InvoiceJobData,
+  CommissionJobData,
+  DunningJobData,
+  BillingRecurringJobData,
 } from './types.js'
 
 // ── Content generation queues ──
@@ -34,3 +38,10 @@ export const alertQueue = createQueue<AlertJobData>(QUEUE_NAMES.ALERT)
 // ── Site generation queue ──
 
 export const siteGenerateQueue = createQueue<SiteGenerateJobData>(QUEUE_NAMES.SITE_GENERATE)
+
+// ── Billing queues ──
+
+export const invoiceQueue = createQueue<InvoiceJobData>(QUEUE_NAMES.INVOICE)
+export const commissionQueue = createQueue<CommissionJobData>(QUEUE_NAMES.COMMISSION)
+export const dunningQueue = createQueue<DunningJobData>(QUEUE_NAMES.DUNNING)
+export const billingRecurringQueue = createQueue<BillingRecurringJobData>(QUEUE_NAMES.BILLING_RECURRING)

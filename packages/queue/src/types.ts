@@ -50,6 +50,50 @@ export interface SiteGenerateJobData {
   sessionId: string
 }
 
+// ── Billing jobs ──
+
+export interface InvoiceJobData {
+  paymentId: string
+}
+
+export interface CommissionJobData {
+  paymentId: string
+}
+
+export interface DunningJobData {
+  subscriptionId: string
+}
+
+export interface BillingRecurringJobData {
+  /** Optional: limit to a specific organization. If omitted, processes all. */
+  organizationId?: string
+}
+
+// ── Billing result types ──
+
+export interface InvoiceResult {
+  paymentId: string
+  invoicePdfUrl: string
+}
+
+export interface CommissionResult {
+  paymentId: string
+  commissionId?: string
+  skipped: boolean
+  reason?: string
+}
+
+export interface DunningResult {
+  subscriptionId: string
+  action: 'retried' | 'cancelled' | 'skipped'
+  attempt?: number
+}
+
+export interface BillingRecurringResult {
+  processed: number
+  failed: number
+}
+
 // ── Worker result types ──
 
 export interface ContentGenerationResult {

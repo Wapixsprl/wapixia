@@ -15,6 +15,11 @@ import { modulesRoutes } from './routes/modules/index.js'
 import { contentsRoutes } from './routes/contents/index.js'
 import { reviewsRoutes } from './routes/reviews/index.js'
 import { socialRoutes } from './routes/social/index.js'
+import { billingRoutes } from './routes/billing/index.js'
+import { paymentRoutes } from './routes/billing/payments.js'
+import { mollieWebhookRoutes } from './routes/webhooks/mollie.js'
+import { stripeWebhookRoutes } from './routes/webhooks/stripe.js'
+import { commissionRoutes } from './routes/commissions/index.js'
 
 const app = Fastify({
   logger: {
@@ -46,6 +51,17 @@ await app.register(modulesRoutes)
 await app.register(contentsRoutes)
 await app.register(reviewsRoutes)
 await app.register(socialRoutes)
+
+// Billing & Payments
+await app.register(billingRoutes)
+await app.register(paymentRoutes)
+
+// Commissions
+await app.register(commissionRoutes)
+
+// Webhooks (no auth — use their own verification)
+await app.register(mollieWebhookRoutes)
+await app.register(stripeWebhookRoutes)
 
 // Start
 try {

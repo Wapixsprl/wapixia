@@ -1,7 +1,7 @@
 // @wapixia/queue — Cron scheduler for recurring jobs
 
 import cron from 'node-cron'
-import { socialQueue, gmbQueue, blogQueue, publishQueue, alertQueue } from './queues.js'
+import { socialQueue, gmbQueue, blogQueue, publishQueue, alertQueue, billingRecurringQueue, dunningQueue, commissionQueue } from './queues.js'
 import { createSupabaseClient } from './services/supabase.js'
 import { workerLogger } from './logger.js'
 
@@ -251,6 +251,92 @@ async function alertNegativeReviews(): Promise<void> {
   log(`Queued ${reviews.length} negative review alerts`)
 }
 
+/**
+ * Trigger monthly recurring billing for all active subscriptions.
+ * Runs on the 1st of each month at 6:00 AM.
+ */
+async function scheduleBillingRecurring(): Promise<void> {
+  log('Scheduling monthly recurring billing run')
+
+  await billingRecurringQueue.add('billing-recurring', {}, {
+    jobId: `billing-recurring-${Date.now()}`,
+  })
+
+  log('Queued billing-recurring job')
+}
+
+/**
+ * Trigger monthly commission payout processing.
+ * Runs on the 2nd of each month at 8:00 AM.
+ * Finds all pending commissions and attempts Stripe transfers.
+ */
+async function scheduleMonthlyCommissions(): Promise<void> {
+  log('Processing monthly pending commissions')
+
+  const supabase = createSupabaseClient()
+
+  const { data: pendingCommissions, error } = await supabase
+    .from('commissions')
+    .select('id, payment_id')
+    .in('status', ['pending', 'processing'])
+    .limit(200)
+
+  if (error) {
+    logError('Failed to fetch pending commissions', error)
+    return
+  }
+
+  if (!pendingCommissions || pendingCommissions.length === 0) {
+    log('No pending commissions to process')
+    return
+  }
+
+  for (const commission of pendingCommissions) {
+    await commissionQueue.add('calculate-commission', {
+      paymentId: commission.payment_id as string,
+    }, {
+      jobId: `commission-monthly-${commission.id}-${Date.now()}`,
+    })
+  }
+
+  log(`Queued ${pendingCommissions.length} commission jobs for monthly payout`)
+}
+
+/**
+ * Check subscriptions in dunning state and schedule retry jobs.
+ * Runs daily at 9:00 AM.
+ */
+async function scheduleDunningRetries(): Promise<void> {
+  log('Checking for subscriptions needing dunning retry')
+
+  const supabase = createSupabaseClient()
+
+  const { data: subscriptions, error } = await supabase
+    .from('subscriptions')
+    .select('id')
+    .in('status', ['past_due', 'unpaid'])
+    .limit(100)
+
+  if (error) {
+    logError('Failed to fetch dunning subscriptions', error)
+    return
+  }
+
+  if (!subscriptions || subscriptions.length === 0) {
+    return
+  }
+
+  for (const sub of subscriptions) {
+    await dunningQueue.add('retry-payment', {
+      subscriptionId: sub.id as string,
+    }, {
+      jobId: `dunning-${sub.id}-${Date.now()}`,
+    })
+  }
+
+  log(`Queued ${subscriptions.length} dunning retry jobs`)
+}
+
 // ── Start scheduler ──
 
 export function startScheduler(): void {
@@ -289,6 +375,21 @@ export function startScheduler(): void {
   // Alert unreported negative reviews: every hour
   cron.schedule('30 * * * *', () => {
     alertNegativeReviews().catch((err: unknown) => logError('alertNegativeReviews failed', err))
+  })
+
+  // Billing recurring: 1st of each month at 6:00 AM
+  cron.schedule('0 6 1 * *', () => {
+    scheduleBillingRecurring().catch((err: unknown) => logError('scheduleBillingRecurring failed', err))
+  })
+
+  // Monthly commissions payout: 2nd of each month at 8:00 AM
+  cron.schedule('0 8 2 * *', () => {
+    scheduleMonthlyCommissions().catch((err: unknown) => logError('scheduleMonthlyCommissions failed', err))
+  })
+
+  // Dunning retries: daily at 9:00 AM
+  cron.schedule('0 9 * * *', () => {
+    scheduleDunningRetries().catch((err: unknown) => logError('scheduleDunningRetries failed', err))
   })
 
   log('All cron jobs registered')
