@@ -44,7 +44,7 @@ function Step6({ answers, onUpdate }: StepProps) {
               onChange={(e) => updateItem(i, e.target.value)}
               onBlur={() => onUpdate('_touched_services', true)}
               placeholder={`Prestation ${i + 1}`}
-              className={`flex-1 rounded-lg border px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#00D4B1]/40 ${
+              className={`flex-1 rounded-lg border px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#F5A623]/40 ${
                 error && !item.trim() ? 'border-red-400 bg-red-50' : 'border-gray-300'
               }`}
             />
@@ -68,7 +68,7 @@ function Step6({ answers, onUpdate }: StepProps) {
         <button
           type="button"
           onClick={addItem}
-          className="rounded-lg border-2 border-dashed border-gray-300 px-4 py-2 text-sm text-gray-500 transition-colors hover:border-[#00D4B1] hover:text-[#00D4B1]"
+          className="rounded-lg border-2 border-dashed border-gray-300 px-4 py-2 text-sm text-gray-500 transition-colors hover:border-[#F5A623] hover:text-[#F5A623]"
         >
           + Ajouter une prestation
         </button>
@@ -94,7 +94,7 @@ function Step7({ answers, onUpdate }: StepProps) {
             onClick={() => onUpdate('price_range', p.value)}
             className={`rounded-xl border-2 px-4 py-3 text-left transition-all ${
               selected === p.value
-                ? 'border-[#00D4B1] bg-[#00D4B1]/5'
+                ? 'border-[#F5A623] bg-[#F5A623]/5'
                 : 'border-gray-200 hover:border-gray-300'
             }`}
           >
@@ -129,7 +129,7 @@ function Step8({ answers, onUpdate }: StepProps) {
         onChange={(e) => onUpdate('differentiator', e.target.value)}
         onBlur={() => onUpdate('_touched_differentiator', true)}
         placeholder="Qu'est-ce qui rend votre entreprise unique ? Pourquoi les clients vous choisissent ?"
-        className={`w-full resize-none rounded-lg border px-4 py-3 outline-none focus:ring-2 focus:ring-[#00D4B1]/40 ${
+        className={`w-full resize-none rounded-lg border px-4 py-3 outline-none focus:ring-2 focus:ring-[#F5A623]/40 ${
           error ? 'border-red-400 bg-red-50' : 'border-gray-300'
         }`}
       />
@@ -166,7 +166,7 @@ function Step9({ answers, onUpdate }: StepProps) {
         onChange={(e) => onUpdate('target_audience', e.target.value)}
         onBlur={() => onUpdate('_touched_target', true)}
         placeholder="Decrivez votre clientele ideale : age, profil, besoins..."
-        className={`w-full resize-none rounded-lg border px-4 py-3 outline-none focus:ring-2 focus:ring-[#00D4B1]/40 ${
+        className={`w-full resize-none rounded-lg border px-4 py-3 outline-none focus:ring-2 focus:ring-[#F5A623]/40 ${
           error ? 'border-red-400 bg-red-50' : 'border-gray-300'
         }`}
       />

@@ -29,7 +29,7 @@ function Step1({ answers, onUpdate }: StepProps) {
         onBlur={() => onUpdate('_touched_company_name', true)}
         onChange={(e) => onUpdate('company_name', e.target.value)}
         placeholder="Ex: Boulangerie Dupont"
-        className={`w-full rounded-lg border px-4 py-3 text-gray-900 outline-none transition-colors focus:ring-2 focus:ring-[#00D4B1]/40 ${
+        className={`w-full rounded-lg border px-4 py-3 text-gray-900 outline-none transition-colors focus:ring-2 focus:ring-[#F5A623]/40 ${
           error ? 'border-red-400 bg-red-50' : 'border-gray-300'
         }`}
       />
@@ -54,7 +54,7 @@ function Step2({ answers, onUpdate }: StepProps) {
             onClick={() => onUpdate('sector', s.value)}
             className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
               selected === s.value
-                ? 'border-[#00D4B1] bg-[#00D4B1]/5 shadow-sm'
+                ? 'border-[#F5A623] bg-[#F5A623]/5 shadow-sm'
                 : 'border-gray-200 hover:border-gray-300'
             }`}
           >
@@ -89,7 +89,7 @@ function Step3({ answers, onUpdate }: StepProps) {
             onChange={(e) => onUpdate('city', e.target.value)}
             onBlur={() => onUpdate('_touched_location', true)}
             placeholder="Bruxelles"
-            className={`w-full rounded-lg border px-4 py-3 outline-none focus:ring-2 focus:ring-[#00D4B1]/40 ${
+            className={`w-full rounded-lg border px-4 py-3 outline-none focus:ring-2 focus:ring-[#F5A623]/40 ${
               touched && !city ? 'border-red-400 bg-red-50' : 'border-gray-300'
             }`}
           />
@@ -105,7 +105,7 @@ function Step3({ answers, onUpdate }: StepProps) {
             onChange={(e) => onUpdate('zip', e.target.value)}
             onBlur={() => onUpdate('_touched_location', true)}
             placeholder="1000"
-            className={`w-full rounded-lg border px-4 py-3 outline-none focus:ring-2 focus:ring-[#00D4B1]/40 ${
+            className={`w-full rounded-lg border px-4 py-3 outline-none focus:ring-2 focus:ring-[#F5A623]/40 ${
               touched && !zip ? 'border-red-400 bg-red-50' : 'border-gray-300'
             }`}
           />
@@ -121,7 +121,7 @@ function Step3({ answers, onUpdate }: StepProps) {
           value={address}
           onChange={(e) => onUpdate('address', e.target.value)}
           placeholder="Rue de la Loi 1"
-          className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-[#00D4B1]/40"
+          className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-[#F5A623]/40"
         />
       </div>
     </div>
@@ -148,7 +148,7 @@ function Step4({ answers, onUpdate }: StepProps) {
             onChange={(e) => onUpdate('phone', e.target.value)}
             onBlur={() => onUpdate('_touched_contact', true)}
             placeholder="+32 470 12 34 56"
-            className={`w-full rounded-lg border px-4 py-3 outline-none focus:ring-2 focus:ring-[#00D4B1]/40 ${
+            className={`w-full rounded-lg border px-4 py-3 outline-none focus:ring-2 focus:ring-[#F5A623]/40 ${
               touched && !phone ? 'border-red-400 bg-red-50' : 'border-gray-300'
             }`}
           />
@@ -164,7 +164,7 @@ function Step4({ answers, onUpdate }: StepProps) {
             onChange={(e) => onUpdate('contact_email', e.target.value)}
             onBlur={() => onUpdate('_touched_contact', true)}
             placeholder="contact@example.com"
-            className={`w-full rounded-lg border px-4 py-3 outline-none focus:ring-2 focus:ring-[#00D4B1]/40 ${
+            className={`w-full rounded-lg border px-4 py-3 outline-none focus:ring-2 focus:ring-[#F5A623]/40 ${
               touched && !email ? 'border-red-400 bg-red-50' : 'border-gray-300'
             }`}
           />
@@ -180,7 +180,7 @@ function Step4({ answers, onUpdate }: StepProps) {
           value={website}
           onChange={(e) => onUpdate('existing_website', e.target.value)}
           placeholder="https://www.example.com"
-          className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-[#00D4B1]/40"
+          className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-[#F5A623]/40"
         />
       </div>
     </div>
@@ -210,7 +210,7 @@ function Step5({ answers, onUpdate }: StepProps) {
         onChange={(e) => onUpdate('description', e.target.value)}
         onBlur={() => onUpdate('_touched_description', true)}
         placeholder="Decrivez en quelques phrases votre activite, vos specialites, ce que vous proposez..."
-        className={`w-full resize-none rounded-lg border px-4 py-3 outline-none focus:ring-2 focus:ring-[#00D4B1]/40 ${
+        className={`w-full resize-none rounded-lg border px-4 py-3 outline-none focus:ring-2 focus:ring-[#F5A623]/40 ${
           error ? 'border-red-400 bg-red-50' : 'border-gray-300'
         }`}
       />

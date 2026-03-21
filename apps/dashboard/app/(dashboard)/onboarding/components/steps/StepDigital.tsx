@@ -29,7 +29,7 @@ function Step18({ answers, onUpdate }: StepProps) {
               value={(answers[s.key] as string) ?? ''}
               onChange={(e) => onUpdate(s.key, e.target.value)}
               placeholder={s.placeholder}
-              className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#00D4B1]/40"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#F5A623]/40"
             />
           </div>
         ))}
@@ -59,7 +59,7 @@ function Step19({ answers, onUpdate }: StepProps) {
           aria-checked={hasGmb}
           onClick={() => onUpdate('has_gmb', !hasGmb)}
           className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors ${
-            hasGmb ? 'bg-[#00D4B1]' : 'bg-gray-200'
+            hasGmb ? 'bg-[#F5A623]' : 'bg-gray-200'
           }`}
         >
           <span
@@ -80,7 +80,7 @@ function Step19({ answers, onUpdate }: StepProps) {
               value={gmbUrl}
               onChange={(e) => onUpdate('gmb_url', e.target.value)}
               placeholder="https://g.page/..."
-              className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#00D4B1]/40"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#F5A623]/40"
             />
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -96,7 +96,7 @@ function Step19({ answers, onUpdate }: StepProps) {
                 value={gmbRating}
                 onChange={(e) => onUpdate('gmb_rating', e.target.value)}
                 placeholder="4.5"
-                className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#00D4B1]/40"
+                className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#F5A623]/40"
               />
             </div>
             <div>
@@ -109,7 +109,7 @@ function Step19({ answers, onUpdate }: StepProps) {
                 value={gmbReviews}
                 onChange={(e) => onUpdate('gmb_review_count', e.target.value)}
                 placeholder="42"
-                className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#00D4B1]/40"
+                className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#F5A623]/40"
               />
             </div>
           </div>

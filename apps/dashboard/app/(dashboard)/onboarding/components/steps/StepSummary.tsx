@@ -155,7 +155,7 @@ function renderBranding(a: Answers) {
             <div className="flex items-center gap-2">
               <span
                 className="inline-block h-5 w-5 rounded border"
-                style={{ backgroundColor: (a.color_primary as string) ?? '#00D4B1' }}
+                style={{ backgroundColor: (a.color_primary as string) ?? '#F5A623' }}
               />
               <span
                 className="inline-block h-5 w-5 rounded border"

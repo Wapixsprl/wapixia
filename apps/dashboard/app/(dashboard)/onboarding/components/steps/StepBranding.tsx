@@ -1,50 +1,92 @@
 'use client'
 
 import { useCallback, useState } from 'react'
+import { createBrowserClient } from '../../../../../lib/supabase'
 import { type StepProps, LANGUAGES, TONES } from '../../types'
 
 interface FileItem {
   name: string
   size: number
-  preview?: string
+  path: string
+  type: string
+}
+
+const ACCEPTED_TYPES = 'image/*,.pdf,.doc,.docx,.ppt,.pptx'
+
+function getFileIcon(name: string): string {
+  const ext = name.split('.').pop()?.toLowerCase() ?? ''
+  if (['pdf'].includes(ext)) return 'PDF'
+  if (['doc', 'docx'].includes(ext)) return 'DOC'
+  if (['ppt', 'pptx'].includes(ext)) return 'PPT'
+  return 'IMG'
 }
 
 function Step14({ answers, onUpdate }: StepProps) {
   const files = (answers.uploaded_files as FileItem[]) ?? []
   const [dragOver, setDragOver] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+
+  const uploadFiles = useCallback(
+    async (rawFiles: File[]) => {
+      const supabase = createBrowserClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      setUploading(true)
+      setUploadError(null)
+      const newItems: FileItem[] = []
+
+      for (const f of rawFiles) {
+        if (files.length + newItems.length >= 10) break
+        if (f.size > 10 * 1024 * 1024) { setUploadError('Fichier trop volumineux (max 10 Mo)'); continue }
+
+        const ext = f.name.split('.').pop() ?? 'bin'
+        const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+
+        const { error } = await supabase.storage
+          .from('onboarding-files')
+          .upload(path, f, { upsert: false })
+
+        if (error) {
+          setUploadError(`Erreur: ${error.message}`)
+          continue
+        }
+
+        newItems.push({ name: f.name, size: f.size, path, type: f.type })
+      }
+
+      if (newItems.length > 0) {
+        onUpdate('uploaded_files', [...files, ...newItems])
+      }
+      setUploading(false)
+    },
+    [files, onUpdate],
+  )
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault()
       setDragOver(false)
-      const newFiles: FileItem[] = []
-      const droppedFiles = Array.from(e.dataTransfer.files)
-      for (const f of droppedFiles) {
-        if (files.length + newFiles.length >= 10) break
-        if (f.size > 5 * 1024 * 1024) continue
-        newFiles.push({ name: f.name, size: f.size })
-      }
-      onUpdate('uploaded_files', [...files, ...newFiles])
+      void uploadFiles(Array.from(e.dataTransfer.files))
     },
-    [files, onUpdate],
+    [uploadFiles],
   )
 
   const handleFileInput = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const selected = Array.from(e.target.files ?? [])
-      const newFiles: FileItem[] = []
-      for (const f of selected) {
-        if (files.length + newFiles.length >= 10) break
-        if (f.size > 5 * 1024 * 1024) continue
-        newFiles.push({ name: f.name, size: f.size })
-      }
-      onUpdate('uploaded_files', [...files, ...newFiles])
+      void uploadFiles(Array.from(e.target.files ?? []))
       e.target.value = ''
     },
-    [files, onUpdate],
+    [uploadFiles],
   )
 
-  function removeFile(index: number) {
+  async function removeFile(index: number) {
+    const file = files[index]
+    if (file?.path) {
+      const supabase = createBrowserClient()
+      await supabase.storage.from('onboarding-files').remove([file.path])
+    }
     onUpdate('uploaded_files', files.filter((_, i) => i !== index))
   }
 
@@ -57,8 +99,11 @@ function Step14({ answers, onUpdate }: StepProps) {
   return (
     <div className="space-y-3">
       <label className="block text-sm font-medium text-gray-700">
-        Photos et visuels
+        Photos, visuels et documents de presentation
       </label>
+      <p className="text-xs text-gray-400">
+        Ajoutez vos photos, logos, presentations (PDF, PowerPoint, Word) pour personnaliser votre site.
+      </p>
       <div
         onDragOver={(e) => {
           e.preventDefault()
@@ -68,28 +113,40 @@ function Step14({ answers, onUpdate }: StepProps) {
         onDrop={handleDrop}
         className={`flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 transition-colors ${
           dragOver
-            ? 'border-[#00D4B1] bg-[#00D4B1]/5'
+            ? 'border-[#F5A623] bg-[#F5A623]/5'
             : 'border-gray-300 hover:border-gray-400'
         }`}
       >
         <svg className="mb-3 h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
         </svg>
-        <p className="text-sm text-gray-500">
-          Glissez vos fichiers ici ou{' '}
-          <label className="cursor-pointer font-medium text-[#00D4B1] hover:underline">
-            parcourir
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              onChange={handleFileInput}
-              className="hidden"
-            />
-          </label>
-        </p>
-        <p className="mt-1 text-xs text-gray-400">Max 10 fichiers, 5 Mo chacun</p>
+        {uploading ? (
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-[#F5A623]" />
+            <span className="text-sm text-gray-500">Envoi en cours...</span>
+          </div>
+        ) : (
+          <>
+            <p className="text-sm text-gray-500">
+              Glissez vos fichiers ici ou{' '}
+              <label className="cursor-pointer font-medium text-[#F5A623] hover:underline">
+                parcourir
+                <input
+                  type="file"
+                  multiple
+                  accept={ACCEPTED_TYPES}
+                  onChange={handleFileInput}
+                  className="hidden"
+                />
+              </label>
+            </p>
+            <p className="mt-1 text-xs text-gray-400">Images, PDF, Word, PowerPoint — max 10 fichiers, 10 Mo chacun</p>
+          </>
+        )}
       </div>
+      {uploadError && (
+        <p className="text-xs text-red-500">{uploadError}</p>
+      )}
       {files.length > 0 && (
         <ul className="space-y-1">
           {files.map((f, i) => (
@@ -97,12 +154,17 @@ function Step14({ answers, onUpdate }: StepProps) {
               key={i}
               className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2"
             >
-              <span className="truncate text-sm text-gray-700">{f.name}</span>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="shrink-0 rounded bg-[#F5A623]/10 px-1.5 py-0.5 text-[10px] font-bold text-[#F5A623]">
+                  {getFileIcon(f.name)}
+                </span>
+                <span className="truncate text-sm text-gray-700">{f.name}</span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
                 <span className="text-xs text-gray-400">{formatSize(f.size)}</span>
                 <button
                   type="button"
-                  onClick={() => removeFile(i)}
+                  onClick={() => void removeFile(i)}
                   className="text-gray-400 hover:text-red-500"
                   aria-label="Supprimer"
                 >
@@ -120,7 +182,7 @@ function Step14({ answers, onUpdate }: StepProps) {
 }
 
 function Step15({ answers, onUpdate }: StepProps) {
-  const primary = (answers.color_primary as string) ?? '#00D4B1'
+  const primary = (answers.color_primary as string) ?? '#F5A623'
   const secondary = (answers.color_secondary as string) ?? '#1E293B'
   const autoColor = (answers.color_auto as boolean) ?? false
 
@@ -132,7 +194,7 @@ function Step15({ answers, onUpdate }: StepProps) {
           type="checkbox"
           checked={autoColor}
           onChange={(e) => onUpdate('color_auto', e.target.checked)}
-          className="h-4 w-4 rounded accent-[#00D4B1]"
+          className="h-4 w-4 rounded accent-[#F5A623]"
         />
         <span className="text-sm text-gray-700">
           Utiliser des couleurs automatiques basees sur mon secteur
@@ -155,7 +217,7 @@ function Step15({ answers, onUpdate }: StepProps) {
                 type="text"
                 value={primary}
                 onChange={(e) => onUpdate('color_primary', e.target.value)}
-                className="w-28 rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-[#00D4B1]/40"
+                className="w-28 rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-[#F5A623]/40"
               />
             </div>
           </div>
@@ -174,7 +236,7 @@ function Step15({ answers, onUpdate }: StepProps) {
                 type="text"
                 value={secondary}
                 onChange={(e) => onUpdate('color_secondary', e.target.value)}
-                className="w-28 rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-[#00D4B1]/40"
+                className="w-28 rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-[#F5A623]/40"
               />
             </div>
           </div>
@@ -207,7 +269,7 @@ function Step16({ answers, onUpdate }: StepProps) {
             key={lang.value}
             className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 p-3 transition-all ${
               selected.includes(lang.value)
-                ? 'border-[#00D4B1] bg-[#00D4B1]/5'
+                ? 'border-[#F5A623] bg-[#F5A623]/5'
                 : 'border-gray-200 hover:border-gray-300'
             } ${lang.value === 'fr' ? 'opacity-75' : ''}`}
           >
@@ -216,7 +278,7 @@ function Step16({ answers, onUpdate }: StepProps) {
               checked={selected.includes(lang.value)}
               onChange={() => toggle(lang.value)}
               disabled={lang.value === 'fr'}
-              className="h-4 w-4 rounded accent-[#00D4B1]"
+              className="h-4 w-4 rounded accent-[#F5A623]"
             />
             <span className="text-sm text-gray-700">{lang.label}</span>
             {lang.value === 'fr' && (
@@ -245,7 +307,7 @@ function Step17({ answers, onUpdate }: StepProps) {
             onClick={() => onUpdate('tone', t.value)}
             className={`rounded-xl border-2 px-4 py-3 text-left transition-all ${
               selected === t.value
-                ? 'border-[#00D4B1] bg-[#00D4B1]/5'
+                ? 'border-[#F5A623] bg-[#F5A623]/5'
                 : 'border-gray-200 hover:border-gray-300'
             }`}
           >

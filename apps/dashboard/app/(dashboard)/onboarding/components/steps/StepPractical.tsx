@@ -50,7 +50,7 @@ function Step10({ answers, onUpdate }: StepProps) {
                   type="checkbox"
                   checked={d.open}
                   onChange={(e) => updateDay(day, 'open', e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-[#00D4B1] accent-[#00D4B1]"
+                  className="h-4 w-4 rounded border-gray-300 text-[#F5A623] accent-[#F5A623]"
                 />
                 <span className="text-xs text-gray-500">Ouvert</span>
               </label>
@@ -60,14 +60,14 @@ function Step10({ answers, onUpdate }: StepProps) {
                     type="time"
                     value={d.start}
                     onChange={(e) => updateDay(day, 'start', e.target.value)}
-                    className="rounded border border-gray-300 px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-[#00D4B1]/40"
+                    className="rounded border border-gray-300 px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-[#F5A623]/40"
                   />
                   <span className="text-gray-400">-</span>
                   <input
                     type="time"
                     value={d.end}
                     onChange={(e) => updateDay(day, 'end', e.target.value)}
-                    className="rounded border border-gray-300 px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-[#00D4B1]/40"
+                    className="rounded border border-gray-300 px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-[#F5A623]/40"
                   />
                 </div>
               )}
@@ -104,7 +104,7 @@ function Step11({ answers, onUpdate }: StepProps) {
             key={pm.value}
             className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 p-3 transition-all ${
               selected.includes(pm.value)
-                ? 'border-[#00D4B1] bg-[#00D4B1]/5'
+                ? 'border-[#F5A623] bg-[#F5A623]/5'
                 : 'border-gray-200 hover:border-gray-300'
             }`}
           >
@@ -112,7 +112,7 @@ function Step11({ answers, onUpdate }: StepProps) {
               type="checkbox"
               checked={selected.includes(pm.value)}
               onChange={() => toggle(pm.value)}
-              className="h-4 w-4 rounded border-gray-300 accent-[#00D4B1]"
+              className="h-4 w-4 rounded border-gray-300 accent-[#F5A623]"
             />
             <span className="text-sm text-gray-700">{pm.label}</span>
           </label>
@@ -145,7 +145,7 @@ function Step12({ answers, onUpdate }: StepProps) {
                 aria-checked={checked}
                 onClick={() => onUpdate(opt.key, !checked)}
                 className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors ${
-                  checked ? 'bg-[#00D4B1]' : 'bg-gray-200'
+                  checked ? 'bg-[#F5A623]' : 'bg-gray-200'
                 }`}
               >
                 <span
@@ -180,7 +180,7 @@ function Step13({ answers, onUpdate }: StepProps) {
               onClick={() => onUpdate('radius', r.value)}
               className={`rounded-lg border-2 px-3 py-2 text-sm transition-all ${
                 radius === r.value
-                  ? 'border-[#00D4B1] bg-[#00D4B1]/5 font-medium'
+                  ? 'border-[#F5A623] bg-[#F5A623]/5 font-medium'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
             >
@@ -198,7 +198,7 @@ function Step13({ answers, onUpdate }: StepProps) {
           value={cities}
           onChange={(e) => onUpdate('main_cities', e.target.value)}
           placeholder="Bruxelles, Namur, Liege..."
-          className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-[#00D4B1]/40"
+          className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-[#F5A623]/40"
         />
       </div>
     </div>

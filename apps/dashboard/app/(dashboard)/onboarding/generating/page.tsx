@@ -121,14 +121,14 @@ export default function GeneratingPage() {
         {/* Animated spinner */}
         {status === 'generating' && (
           <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center">
-            <div className="absolute h-24 w-24 animate-spin rounded-full border-4 border-[#00D4B1]/20 border-t-[#00D4B1]" />
-            <div className="absolute h-16 w-16 animate-spin rounded-full border-4 border-[#00D4B1]/10 border-b-[#00D4B1]/60" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }} />
+            <div className="absolute h-24 w-24 animate-spin rounded-full border-4 border-[#F5A623]/20 border-t-[#F5A623]" />
+            <div className="absolute h-16 w-16 animate-spin rounded-full border-4 border-[#F5A623]/10 border-b-[#F5A623]/60" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }} />
           </div>
         )}
 
         {status === 'done' && (
-          <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-[#00D4B1]/10">
-            <svg className="h-12 w-12 text-[#00D4B1]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-[#F5A623]/10">
+            <svg className="h-12 w-12 text-[#F5A623]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
@@ -159,7 +159,7 @@ export default function GeneratingPage() {
           <div className="mb-8">
             <div className="mb-2 h-2 overflow-hidden rounded-full bg-gray-200">
               <div
-                className="h-full rounded-full bg-[#00D4B1] transition-all duration-1000 ease-out"
+                className="h-full rounded-full bg-[#F5A623] transition-all duration-1000 ease-out"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -177,15 +177,15 @@ export default function GeneratingPage() {
                 <div
                   key={i}
                   className={`flex items-center gap-3 rounded-lg px-4 py-2.5 transition-all ${
-                    isActive ? 'bg-[#00D4B1]/5' : ''
+                    isActive ? 'bg-[#F5A623]/5' : ''
                   }`}
                 >
                   {isDone ? (
-                    <svg className="h-5 w-5 shrink-0 text-[#00D4B1]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="h-5 w-5 shrink-0 text-[#F5A623]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   ) : isActive ? (
-                    <div className="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-[#00D4B1]/30 border-t-[#00D4B1]" />
+                    <div className="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-[#F5A623]/30 border-t-[#F5A623]" />
                   ) : (
                     <div className="h-5 w-5 shrink-0 rounded-full border-2 border-gray-200" />
                   )}
@@ -217,7 +217,7 @@ export default function GeneratingPage() {
             <button
               type="button"
               onClick={() => void handleRetry()}
-              className="rounded-lg bg-[#00D4B1] px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-[#00BFA0]"
+              className="rounded-lg bg-[#F5A623] px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-[#00BFA0]"
             >
               Reessayer
             </button>
