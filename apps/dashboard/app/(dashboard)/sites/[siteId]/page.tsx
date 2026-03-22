@@ -1051,6 +1051,13 @@ export default function SiteDetailPage() {
                       <td className="px-4 py-3 text-gray-400 hidden lg:table-cell">{Array.isArray(p.sections) ? p.sections.length : 0}</td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <a
+                            href={`/sites/${siteId}/pages/${p.id}`}
+                            className="rounded p-1.5 text-gray-400 hover:text-[#F5A623] hover:bg-[#F5A623]/10 transition-colors"
+                            title="Editer le contenu"
+                          >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" /></svg>
+                          </a>
                           <button
                             type="button"
                             onClick={() => {
@@ -1059,7 +1066,7 @@ export default function SiteDetailPage() {
                               setShowPageModal(true)
                             }}
                             className="rounded p-1.5 text-gray-400 hover:text-[#F5A623] hover:bg-[#F5A623]/10 transition-colors"
-                            title="Modifier"
+                            title="Modifier les infos"
                           >
                             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
                           </button>
