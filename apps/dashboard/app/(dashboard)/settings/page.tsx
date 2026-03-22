@@ -21,9 +21,9 @@ interface OrgData {
   id: string
   name: string
   white_label_logo_url: string | null
-  address: string | null
-  primary_color: string | null
+  white_label_primary: string | null
   white_label_domain: string | null
+  white_label_name: string | null
 }
 
 interface OrgUser {
@@ -80,9 +80,9 @@ export default function SettingsPage() {
   const [orgForm, setOrgForm] = useState({
     name: '',
     white_label_logo_url: '',
-    address: '',
-    primary_color: '#F5A623',
+    white_label_primary: '#F5A623',
     white_label_domain: '',
+    white_label_name: '',
   })
 
   // Users state
@@ -116,7 +116,7 @@ export default function SettingsPage() {
       // Fetch org data if user has an org
       if (userData.organization_id) {
         const [orgRes, usersRes] = await Promise.all([
-          supabase.from('organizations').select('id, name, white_label_logo_url, address, primary_color, white_label_domain').eq('id', userData.organization_id).single(),
+          supabase.from('organizations').select('id, name, white_label_logo_url, white_label_primary, white_label_domain, white_label_name').eq('id', userData.organization_id).single(),
           supabase.from('users').select('id, first_name, last_name, email, role, avatar_url, created_at').eq('organization_id', userData.organization_id).order('created_at'),
         ])
 
@@ -125,9 +125,9 @@ export default function SettingsPage() {
           setOrgForm({
             name: orgRes.data.name ?? '',
             white_label_logo_url: orgRes.data.white_label_logo_url ?? '',
-            address: orgRes.data.address ?? '',
-            primary_color: orgRes.data.primary_color ?? '#F5A623',
+            white_label_primary: orgRes.data.white_label_primary ?? '#F5A623',
             white_label_domain: orgRes.data.white_label_domain ?? '',
+            white_label_name: orgRes.data.white_label_name ?? '',
           })
         }
         if (usersRes.data) setOrgUsers(usersRes.data)
@@ -173,9 +173,9 @@ export default function SettingsPage() {
       .update({
         name: orgForm.name || null,
         white_label_logo_url: orgForm.white_label_logo_url || null,
-        address: orgForm.address || null,
-        primary_color: orgForm.primary_color || null,
+        white_label_primary: orgForm.white_label_primary || null,
         white_label_domain: orgForm.white_label_domain || null,
+        white_label_name: orgForm.white_label_name || null,
       })
       .eq('id', org.id)
 
@@ -374,13 +374,13 @@ export default function SettingsPage() {
                     className={inputClassName}
                   />
                 </div>
-                <div className="sm:col-span-2">
-                  <label className={labelClassName}>Adresse</label>
+                <div>
+                  <label className={labelClassName}>Nom white-label</label>
                   <input
                     type="text"
-                    value={orgForm.address}
-                    onChange={(e) => setOrgForm(f => ({ ...f, address: e.target.value }))}
-                    placeholder="123 rue de Paris, 75001 Paris"
+                    value={orgForm.white_label_name}
+                    onChange={(e) => setOrgForm(f => ({ ...f, white_label_name: e.target.value }))}
+                    placeholder="Mon Agence"
                     className={inputClassName}
                   />
                 </div>
@@ -399,14 +399,14 @@ export default function SettingsPage() {
                   <div className="flex items-center gap-3">
                     <input
                       type="color"
-                      value={orgForm.primary_color}
-                      onChange={(e) => setOrgForm(f => ({ ...f, primary_color: e.target.value }))}
+                      value={orgForm.white_label_primary}
+                      onChange={(e) => setOrgForm(f => ({ ...f, white_label_primary: e.target.value }))}
                       className="h-10 w-10 cursor-pointer rounded border border-gray-200"
                     />
                     <input
                       type="text"
-                      value={orgForm.primary_color}
-                      onChange={(e) => setOrgForm(f => ({ ...f, primary_color: e.target.value }))}
+                      value={orgForm.white_label_primary}
+                      onChange={(e) => setOrgForm(f => ({ ...f, white_label_primary: e.target.value }))}
                       placeholder="#F5A623"
                       className={inputClassName}
                     />

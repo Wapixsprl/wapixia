@@ -7,7 +7,8 @@ import { createBrowserClient } from '../../../../lib/supabase'
 interface SiteData {
   id: string
   name: string
-  domain: string | null
+  temp_domain: string | null
+  custom_domain: string | null
   status: string
   sector: string | null
   onboarding_done: boolean
@@ -185,7 +186,7 @@ export default function SiteDetailPage() {
             </span>
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-gray-500">
-            {site.domain && <span>{site.domain}</span>}
+            {(site.custom_domain || site.temp_domain) && <span>{site.custom_domain || site.temp_domain}</span>}
             {org && <span>Organisation: {org.name}</span>}
             {site.sector && <span>Secteur: {site.sector}</span>}
           </div>
@@ -266,7 +267,7 @@ export default function SiteDetailPage() {
               </div>
               <div>
                 <dt className="text-xs font-medium text-gray-400 uppercase tracking-wide">Domaine</dt>
-                <dd className="mt-1 text-sm text-gray-900">{site.domain ?? 'Non defini'}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{site.custom_domain || site.temp_domain || 'Non defini'}</dd>
               </div>
               <div>
                 <dt className="text-xs font-medium text-gray-400 uppercase tracking-wide">Statut</dt>

@@ -6,7 +6,8 @@ import { createBrowserClient } from '../../../lib/supabase'
 interface Site {
   id: string
   name: string
-  domain: string | null
+  temp_domain: string | null
+  custom_domain: string | null
   status: string
   sector: string | null
   onboarding_done: boolean
@@ -43,7 +44,7 @@ export default function SitesPage() {
 
       let query = supabase
         .from('sites')
-        .select('id, name, domain, status, sector, onboarding_done, visibility_score, organization_id, owner_user_id, created_at')
+        .select('id, name, temp_domain, custom_domain, status, sector, onboarding_done, visibility_score, organization_id, owner_user_id, created_at')
         .order('created_at', { ascending: false })
 
       // Non-superadmin: filter by their org
@@ -152,8 +153,8 @@ export default function SitesPage() {
                 </div>
 
                 {/* Domain */}
-                {site.domain && (
-                  <p className="mb-3 text-xs text-gray-500 truncate">{site.domain}</p>
+                {(site.custom_domain || site.temp_domain) && (
+                  <p className="mb-3 text-xs text-gray-500 truncate">{site.custom_domain || site.temp_domain}</p>
                 )}
 
                 {/* Meta row */}
