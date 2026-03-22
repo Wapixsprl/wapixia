@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createBrowserClient } from '../../../../../../lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -767,6 +767,331 @@ function Toast({ toast, onClose }: { toast: ToastState; onClose: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
+// AI Chat Panel
+// ---------------------------------------------------------------------------
+
+interface ChatMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  sections?: Section[]
+  timestamp: Date
+}
+
+interface AIChatPanelProps {
+  sections: Section[]
+  onAddSections: (newSections: Section[]) => void
+  onReplaceSections: (newSections: Section[]) => void
+  siteId: string
+  pageInfo: { title: string; slug: string; type: string }
+}
+
+function AIChatPanel({ sections, onAddSections, onReplaceSections, siteId, pageInfo }: AIChatPanelProps) {
+  const supabase = useMemo(() => createBrowserClient(), [])
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
+  const [onboardingData, setOnboardingData] = useState<Record<string, unknown>>({})
+  const [siteInfo, setSiteInfo] = useState({ name: '', domain: '', sector: '' })
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  // Load onboarding data and site info
+  useEffect(() => {
+    async function loadContext() {
+      // Fetch site info
+      const { data: site } = await supabase
+        .from('sites')
+        .select('name, domain, sector')
+        .eq('id', siteId)
+        .single()
+
+      if (site) {
+        setSiteInfo({ name: site.name || '', domain: site.domain || '', sector: site.sector || '' })
+      }
+
+      // Fetch onboarding data
+      const { data: session } = await supabase
+        .from('onboarding_sessions')
+        .select('answers')
+        .eq('site_id', siteId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (session?.answers) {
+        setOnboardingData(session.answers as Record<string, unknown>)
+      }
+    }
+    loadContext()
+  }, [siteId, supabase])
+
+  // Auto-scroll
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    }
+  }, [messages])
+
+  const sendMessage = async () => {
+    if (!input.trim() || loading) return
+
+    const userMessage: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: 'user',
+      content: input.trim(),
+      timestamp: new Date(),
+    }
+    setMessages(prev => [...prev, userMessage])
+    setInput('')
+    setLoading(true)
+
+    try {
+      const { data: { session: authSession } } = await supabase.auth.getSession()
+      const token = authSession?.access_token
+
+      if (!token) {
+        throw new Error('Non authentifie')
+      }
+
+      const conversationHistory = messages.map(m => ({
+        role: m.role,
+        content: m.role === 'assistant' && m.sections?.length
+          ? JSON.stringify({ message: m.content, sections: m.sections })
+          : m.content,
+      }))
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/ai-page-generator`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            message: userMessage.content,
+            onboardingData,
+            siteInfo,
+            existingSections: sections,
+            pageInfo,
+            conversationHistory,
+          }),
+        }
+      )
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Erreur reseau' }))
+        throw new Error(err.error || `Erreur ${res.status}`)
+      }
+
+      const data = await res.json()
+
+      const assistantMessage: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: data.message || 'Voici les sections generees.',
+        sections: data.sections || [],
+        timestamp: new Date(),
+      }
+      setMessages(prev => [...prev, assistantMessage])
+    } catch (err) {
+      const errorMessage: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: `Erreur: ${err instanceof Error ? err.message : 'Erreur inconnue'}. Verifiez que la cle API Anthropic est configuree dans les secrets Supabase.`,
+        timestamp: new Date(),
+      }
+      setMessages(prev => [...prev, errorMessage])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      sendMessage()
+    }
+  }
+
+  // Quick prompts
+  const quickPrompts = [
+    'Cree une page d\'accueil complete optimisee SEO',
+    'Genere une page services avec nos prestations',
+    'Cree une page a propos professionnelle',
+    'Genere une page contact avec FAQ',
+  ]
+
+  return (
+    <>
+      {/* Toggle button */}
+      <motion.button
+        onClick={() => setIsOpen(!isOpen)}
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-gradient-to-r from-gray-900 to-gray-800 text-white px-4 py-3 rounded-full shadow-2xl hover:shadow-[0_0_30px_rgba(245,166,35,0.3)] transition-all group"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        <div className="w-6 h-6 rounded-full bg-[#F5A623] flex items-center justify-center">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <span className="text-sm font-semibold">IA Page Builder</span>
+        {isOpen && (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        )}
+      </motion.button>
+
+      {/* Chat panel */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-20 right-6 z-50 w-[440px] h-[600px] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden"
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-gray-900 to-gray-800 px-5 py-4 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-[#F5A623] flex items-center justify-center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                  <path d="M2 17l10 5 10-5"/>
+                  <path d="M2 12l10 5 10-5"/>
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-white text-sm font-bold">WapixIA Page Builder</h3>
+                <p className="text-gray-400 text-[10px]">Optimisation SEO + GEO automatique</p>
+              </div>
+              <div className="ml-auto flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                <span className="text-green-400 text-[10px] font-medium">Claude</span>
+              </div>
+            </div>
+
+            {/* Messages */}
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+              {messages.length === 0 && (
+                <div className="text-center py-6 space-y-4">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-[#F5A623]/10 flex items-center justify-center">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F5A623" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                      <path d="M2 17l10 5 10-5"/>
+                      <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Decrivez la page que vous voulez</p>
+                    <p className="text-xs text-gray-500 mt-1">L&apos;IA va generer les sections optimisees SEO/GEO en tenant compte de votre onboarding.</p>
+                  </div>
+                  <div className="space-y-2">
+                    {quickPrompts.map((prompt, i) => (
+                      <button
+                        key={i}
+                        onClick={() => { setInput(prompt); }}
+                        className="w-full text-left text-xs bg-gray-50 hover:bg-[#F5A623]/5 border border-gray-200 hover:border-[#F5A623]/30 rounded-lg px-3 py-2.5 text-gray-700 transition-colors"
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {messages.map((msg) => (
+                <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                    msg.role === 'user'
+                      ? 'bg-[#F5A623] text-white rounded-br-md'
+                      : 'bg-gray-100 text-gray-800 rounded-bl-md'
+                  }`}>
+                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+
+                    {/* Section action buttons */}
+                    {msg.role === 'assistant' && msg.sections && msg.sections.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
+                        <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+                          {msg.sections.length} section{msg.sections.length > 1 ? 's' : ''} generee{msg.sections.length > 1 ? 's' : ''}
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {msg.sections.map((s, i) => (
+                            <span key={i} className="inline-flex items-center gap-1 bg-white border border-gray-200 rounded-full px-2 py-0.5 text-[10px] font-medium text-gray-600">
+                              {s.type}
+                            </span>
+                          ))}
+                        </div>
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={() => onAddSections(msg.sections!)}
+                            className="flex-1 bg-[#F5A623] hover:bg-[#d4891c] text-white text-xs font-semibold py-2 rounded-lg transition-colors"
+                          >
+                            + Ajouter
+                          </button>
+                          <button
+                            onClick={() => onReplaceSections(msg.sections!)}
+                            className="flex-1 bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold py-2 rounded-lg transition-colors"
+                          >
+                            Remplacer tout
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {loading && (
+                <div className="flex justify-start">
+                  <div className="bg-gray-100 rounded-2xl rounded-bl-md px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-1">
+                        <div className="w-2 h-2 rounded-full bg-[#F5A623] animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <div className="w-2 h-2 rounded-full bg-[#F5A623] animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <div className="w-2 h-2 rounded-full bg-[#F5A623] animate-bounce" style={{ animationDelay: '300ms' }} />
+                      </div>
+                      <span className="text-xs text-gray-500">Generation en cours...</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Input */}
+            <div className="p-3 border-t border-gray-200 bg-gray-50">
+              <div className="flex gap-2">
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Decrivez la page que vous voulez..."
+                  rows={2}
+                  className="flex-1 resize-none rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] placeholder-gray-400"
+                />
+                <button
+                  onClick={sendMessage}
+                  disabled={!input.trim() || loading}
+                  className="self-end bg-[#F5A623] hover:bg-[#d4891c] disabled:opacity-40 disabled:cursor-not-allowed text-white p-2.5 rounded-xl transition-colors"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/></svg>
+                </button>
+              </div>
+              <p className="text-[9px] text-gray-400 mt-1.5 text-center">
+                Optimisation SEO (Schema.org, mots-cles locaux) + GEO (AI Overviews, Perplexity) incluse automatiquement
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Main Page Component
 // ---------------------------------------------------------------------------
 
@@ -893,6 +1218,28 @@ export default function PageEditorPage() {
   }
 
   const selectedSection = sections.find((s) => s.id === selectedId) || null
+
+  // AI: add generated sections
+  const handleAddSections = (newSections: Section[]) => {
+    // Ensure unique IDs
+    const withIds = newSections.map(s => ({
+      ...s,
+      id: s.id && s.id.startsWith('sec_') ? crypto.randomUUID() : (s.id || crypto.randomUUID()),
+    }))
+    setSections(prev => [...prev, ...withIds])
+    showToast(`${withIds.length} section(s) ajoutee(s) par l'IA`, 'success')
+  }
+
+  // AI: replace all sections
+  const handleReplaceSections = (newSections: Section[]) => {
+    const withIds = newSections.map(s => ({
+      ...s,
+      id: s.id && s.id.startsWith('sec_') ? crypto.randomUUID() : (s.id || crypto.randomUUID()),
+    }))
+    setSections(withIds)
+    setSelectedId(null)
+    showToast(`Page reconstruite avec ${withIds.length} section(s) par l'IA`, 'success')
+  }
 
   // Loading
   if (loading) {
@@ -1083,6 +1430,19 @@ export default function PageEditorPage() {
 
       {/* Toast */}
       <Toast toast={toast} onClose={closeToast} />
+
+      {/* AI Chat Panel */}
+      <AIChatPanel
+        sections={sections}
+        onAddSections={handleAddSections}
+        onReplaceSections={handleReplaceSections}
+        siteId={params.siteId}
+        pageInfo={{
+          title: pageData?.title || '',
+          slug: pageData?.slug || '',
+          type: 'page',
+        }}
+      />
     </div>
   )
 }
