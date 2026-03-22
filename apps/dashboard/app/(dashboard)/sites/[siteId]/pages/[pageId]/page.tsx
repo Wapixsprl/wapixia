@@ -19,6 +19,7 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import ImagePicker from '../../../../../../components/ImagePicker'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -476,6 +477,9 @@ interface PropertiesEditorProps {
 }
 
 function PropertiesEditor({ section, onChange }: PropertiesEditorProps) {
+  const [showImagePicker, setShowImagePicker] = useState(false)
+  const [imagePickerTarget, setImagePickerTarget] = useState<{ key: string; arrKey?: string; arrIndex?: number } | null>(null)
+
   const updateContent = (key: string, value: unknown) => {
     onChange({ ...section, content: { ...section.content, [key]: value } })
   }
@@ -524,15 +528,40 @@ function PropertiesEditor({ section, onChange }: PropertiesEditorProps) {
     </div>
   )
 
+  const imageField = (label: string, key: string) => (
+    <div key={key} className="mb-3">
+      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          className="flex-1 text-sm border border-gray-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-[#F5A623]/40"
+          placeholder="URL de l'image ou rechercher..."
+          value={(section.content[key] as string) || ''}
+          onChange={(e) => updateContent(key, e.target.value)}
+        />
+        <button
+          onClick={() => { setImagePickerTarget({ key }); setShowImagePicker(true) }}
+          className="px-3 py-2 bg-[#F5A623] text-white text-xs font-medium rounded-lg hover:bg-[#d4891c] transition-colors flex items-center gap-1"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+          Pexels
+        </button>
+      </div>
+      {(section.content[key] as string) && (
+        <img src={section.content[key] as string} alt="" className="mt-2 w-full h-24 object-cover rounded-lg border border-gray-200" />
+      )}
+    </div>
+  )
+
   // Render content fields based on type
   function renderContentFields() {
     switch (section.type) {
       case 'hero':
-        return (<>{textField('Titre', 'title')}{textField('Sous-titre', 'subtitle')}{textField('Texte du bouton', 'cta_text')}{textField('URL du bouton', 'cta_url')}{textField('Image de fond (URL)', 'background_image')}</>)
+        return (<>{textField('Titre', 'title')}{textField('Sous-titre', 'subtitle')}{textField('Texte du bouton', 'cta_text')}{textField('URL du bouton', 'cta_url')}{imageField('Image de fond', 'background_image')}</>)
       case 'text':
         return (<>{textField('Titre', 'title')}{textField('Contenu', 'body', true)}</>)
       case 'image':
-        return (<>{textField('URL de l\'image', 'url')}{textField('Texte alternatif', 'alt')}{textField('Legende', 'caption')}</>)
+        return (<>{imageField('Image', 'url')}{textField('Texte alternatif', 'alt')}{textField('Legende', 'caption')}</>)
       case 'cta':
         return (<>{textField('Titre', 'title')}{textField('Sous-titre', 'subtitle')}{textField('Texte du bouton', 'button_text')}{textField('URL du bouton', 'button_url')}</>)
       case 'contact':
@@ -596,6 +625,23 @@ function PropertiesEditor({ section, onChange }: PropertiesEditorProps) {
                     value={(item[f] as number) || 5}
                     onChange={(e) => updateItemField(arrKey, idx, f, parseInt(e.target.value, 10))}
                   />
+                ) : f === 'url' ? (
+                  <div className="flex gap-1">
+                    <input
+                      type="text"
+                      className="flex-1 text-xs border border-gray-200 rounded p-1.5 focus:outline-none focus:ring-1 focus:ring-[#F5A623]/40"
+                      value={(item[f] as string) || ''}
+                      onChange={(e) => updateItemField(arrKey, idx, f, e.target.value)}
+                    />
+                    <button
+                      onClick={() => { setImagePickerTarget({ key: 'url', arrKey, arrIndex: idx }); setShowImagePicker(true) }}
+                      className="px-2 py-1 bg-[#F5A623] text-white text-[10px] font-medium rounded hover:bg-[#d4891c] transition-colors flex items-center gap-0.5 shrink-0"
+                      title="Rechercher sur Pexels"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                      Pexels
+                    </button>
+                  </div>
                 ) : (
                   <input
                     type="text"
@@ -735,6 +781,22 @@ function PropertiesEditor({ section, onChange }: PropertiesEditorProps) {
           Pleine largeur
         </label>
       </div>
+
+      <ImagePicker
+        isOpen={showImagePicker}
+        onClose={() => { setShowImagePicker(false); setImagePickerTarget(null) }}
+        onSelect={(imageUrl) => {
+          if (imagePickerTarget) {
+            if (imagePickerTarget.arrKey !== undefined && imagePickerTarget.arrIndex !== undefined) {
+              updateItemField(imagePickerTarget.arrKey, imagePickerTarget.arrIndex, imagePickerTarget.key, imageUrl)
+            } else {
+              updateContent(imagePickerTarget.key, imageUrl)
+            }
+          }
+          setShowImagePicker(false)
+          setImagePickerTarget(null)
+        }}
+      />
     </div>
   )
 }
