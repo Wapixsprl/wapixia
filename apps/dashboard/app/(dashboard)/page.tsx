@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 import { createBrowserClient } from '../../lib/supabase'
 
 interface DashboardData {
@@ -113,40 +114,53 @@ export default function DashboardHomePage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-medium text-gray-500">Contenus generes</p>
-          <p className="mt-2 text-3xl font-bold text-gray-900">{data.contentCount}</p>
-          <p className="mt-1 text-xs text-orange-500">{data.pendingCount} en attente</p>
-        </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-medium text-gray-500">Avis Google</p>
-          <p className="mt-2 text-3xl font-bold text-gray-900">{data.reviewCount}</p>
-          <p className="mt-1 text-xs text-yellow-500">{data.avgRating} &#9733; moyenne</p>
-        </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-medium text-gray-500">Modules actifs</p>
-          <p className="mt-2 text-3xl font-bold text-[#F5A623]">{data.activeModules}</p>
-          <p className="mt-1 text-xs text-gray-400">sur 3 disponibles</p>
-        </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        {[
+          { label: 'Contenus generes', value: data.contentCount, sub: `${data.pendingCount} en attente`, subColor: 'text-orange-500', valueColor: 'text-gray-900' },
+          { label: 'Avis Google', value: data.reviewCount, sub: `${data.avgRating} \u2605 moyenne`, subColor: 'text-yellow-500', valueColor: 'text-gray-900' },
+          { label: 'Modules actifs', value: data.activeModules, sub: 'sur 3 disponibles', subColor: 'text-gray-400', valueColor: 'text-[#F5A623]' },
+        ].map((stat, i) => (
+          <motion.div
+            key={stat.label}
+            initial={{ opacity: 0, y: 20, filter: 'blur(8px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            transition={{ duration: 0.5, delay: i * 0.1, ease: 'easeOut' }}
+            className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow"
+          >
+            <p className="text-sm font-medium text-gray-500">{stat.label}</p>
+            <p className={`mt-2 text-3xl font-bold ${stat.valueColor}`}>{stat.value}</p>
+            <p className={`mt-1 text-xs ${stat.subColor}`}>{stat.sub}</p>
+          </motion.div>
+        ))}
+        <motion.div
+          initial={{ opacity: 0, y: 20, filter: 'blur(8px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          transition={{ duration: 0.5, delay: 0.3, ease: 'easeOut' }}
+          className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow"
+        >
           <p className="text-sm font-medium text-gray-500">Site</p>
           <p className="mt-2 text-lg font-bold text-gray-900">{data.siteName}</p>
           <span className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${status.color}`}>
             {status.label}
           </span>
-        </div>
+        </motion.div>
       </div>
 
       {/* Quick Actions */}
       <div>
         <h2 className="mb-4 text-lg font-semibold text-gray-900">Actions rapides</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {QUICK_ACTIONS.map((action) => (
-            <a key={action.href} href={action.href}
-              className="group flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:shadow-md hover:border-[#F5A623]/30">
+          {QUICK_ACTIONS.map((action, i) => (
+            <motion.a
+              key={action.href}
+              href={action.href}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.4 + i * 0.08 }}
+              className="group flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:shadow-md hover:border-[#F5A623]/30 hover:scale-[1.02]"
+            >
               <span className="text-2xl">{action.icon}</span>
               <p className="text-sm font-semibold text-gray-900 group-hover:text-[#F5A623] transition-colors">{action.label}</p>
-            </a>
+            </motion.a>
           ))}
         </div>
       </div>

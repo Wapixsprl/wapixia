@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createBrowserClient } from '../../../../../../lib/supabase'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   DndContext,
   closestCenter,
@@ -207,10 +208,12 @@ function SectionPreview({ section }: { section: Section }) {
         ? `url(${content.background_image as string})`
         : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
       return (
-        <div className={`${pad} rounded-lg text-center text-white min-h-[180px] flex flex-col items-center justify-center`} style={{ background: bg }}>
-          <h2 className="text-2xl font-bold mb-2">{(content.title as string) || 'Titre principal'}</h2>
-          <p className="text-base opacity-90 mb-4">{(content.subtitle as string) || 'Sous-titre'}</p>
-          <span className="inline-block bg-white text-gray-900 px-5 py-2 rounded-full text-sm font-semibold">{(content.cta_text as string) || 'En savoir plus'}</span>
+        <div className={`${pad} rounded-lg text-center text-white min-h-[180px] flex flex-col items-center justify-center relative overflow-hidden`} style={{ background: bg }}>
+          {/* Animated gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-[shimmer_3s_ease-in-out_infinite]" />
+          <h2 className="text-2xl font-bold mb-2 relative z-10">{(content.title as string) || 'Titre principal'}</h2>
+          <p className="text-base opacity-90 mb-4 relative z-10">{(content.subtitle as string) || 'Sous-titre'}</p>
+          <span className="relative z-10 inline-block bg-white text-gray-900 px-5 py-2 rounded-full text-sm font-semibold shadow-lg hover:shadow-xl transition-shadow">{(content.cta_text as string) || 'En savoir plus'}</span>
         </div>
       )
     }
@@ -398,11 +401,17 @@ function SortableSection({ section, isSelected, isPreview, onSelect, onDuplicate
 
   if (isPreview) {
     return (
-      <div style={{ backgroundColor: section.settings.background }}>
+      <motion.div
+        initial={{ opacity: 0, y: 30, filter: 'blur(10px)' }}
+        whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        viewport={{ once: true, margin: '-50px' }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+        style={{ backgroundColor: section.settings.background }}
+      >
         <div className={section.settings.fullWidth ? '' : 'max-w-4xl mx-auto'}>
           <SectionPreview section={section} />
         </div>
-      </div>
+      </motion.div>
     )
   }
 
